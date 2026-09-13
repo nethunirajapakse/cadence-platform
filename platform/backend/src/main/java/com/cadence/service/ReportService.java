@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +23,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class ReportService {
+
+    private static final long COMMENT_EDIT_WINDOW_MINUTES = 15;
 
     private final WeeklyReportRepository weeklyReportRepository;
     private final ReportVersionRepository reportVersionRepository;
@@ -112,18 +115,68 @@ public class ReportService {
         if (request.getDecision() == ReviewDecision.APPROVE) {
             report.setStatus(ReportStatus.APPROVED);
             report.setApprovedAt(LocalDateTime.now());
-            currentVersion.setComment(request.getComment()); // optional note on approval
+            applyComment(currentVersion, request.getComment()); // optional note on approval
         } else {
             if (request.getComment() == null || request.getComment().isBlank()) {
                 throw new IllegalStateException("A comment is required when requesting changes");
             }
             report.setStatus(ReportStatus.NEEDS_CORRECTION);
             report.setManagerComment(request.getComment());
-            currentVersion.setComment(request.getComment());
+            applyComment(currentVersion, request.getComment());
         }
 
         reportVersionRepository.save(currentVersion);
         weeklyReportRepository.save(report);
+
+        return toResponse(report);
+    }
+
+    // Sets a NEW comment - always resets the posted-at anchor and clears the
+    // edited flag, since this is a fresh comment from a fresh review action,
+    // not a correction of the previous one.
+    private void applyComment(ReportVersion version, String comment) {
+        version.setComment(comment);
+        if (comment != null && !comment.isBlank()) {
+            version.setCommentPostedAt(LocalDateTime.now());
+            version.setCommentEdited(false);
+        }
+    }
+
+    // A pure typo-fix path: corrects the wording of an existing comment
+    // without touching the report's status or triggering a new review cycle.
+    // Only allowed within COMMENT_EDIT_WINDOW_MINUTES of the comment's
+    // original commentPostedAt - after that, the comment is considered
+    // settled, so a team member who already read it can trust it won't
+    // silently change later. Also scoped to NEEDS_CORRECTION, same reasoning
+    // as before: that's the one status where this comment is the current one.
+    public ReportResponse editManagerComment(UUID reportId, String newComment) {
+        WeeklyReport report = findOrThrow(reportId);
+
+        if (report.getStatus() != ReportStatus.NEEDS_CORRECTION) {
+            throw new IllegalStateException(
+                    "The manager comment can only be edited while the report is in NEEDS_CORRECTION (current status: "
+                            + report.getStatus() + ")");
+        }
+
+        ReportVersion currentVersion = reportVersionRepository.findByReport_ReportIdAndCurrentTrue(reportId)
+                .orElseThrow(() -> new IllegalStateException("No version on record for this report"));
+
+        if (currentVersion.getCommentPostedAt() == null) {
+            throw new IllegalStateException("There is no comment to edit yet");
+        }
+
+        long minutesSincePosted = Duration.between(currentVersion.getCommentPostedAt(), LocalDateTime.now()).toMinutes();
+        if (minutesSincePosted >= COMMENT_EDIT_WINDOW_MINUTES) {
+            throw new IllegalStateException(
+                    "The " + COMMENT_EDIT_WINDOW_MINUTES + "-minute edit window for this comment has passed");
+        }
+
+        report.setManagerComment(newComment);
+        currentVersion.setComment(newComment);
+        currentVersion.setCommentEdited(true); // commentPostedAt is deliberately NOT reset here
+
+        weeklyReportRepository.save(report);
+        reportVersionRepository.save(currentVersion);
 
         return toResponse(report);
     }
@@ -275,6 +328,10 @@ public class ReportService {
     }
 
     private ReportResponse toResponse(WeeklyReport report) {
+        ReportVersion currentVersion = reportVersionRepository
+                .findByReport_ReportIdAndCurrentTrue(report.getReportId())
+                .orElse(null);
+
         return new ReportResponse(
                 report,
                 mapTasks(report),
@@ -282,7 +339,9 @@ public class ReportService {
                 mapBlockers(report),
                 mapAchievements(report),
                 mapTimeLogs(report),
-                mapNoteLinks(report));
+                mapNoteLinks(report),
+                currentVersion != null ? currentVersion.getCommentPostedAt() : null,
+                currentVersion != null && currentVersion.isCommentEdited());
     }
 
     // ---- entity -> DTO mappers, shared by toResponse() and the version snapshot ----

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api } from "../lib/api";
-import type { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from "../types/auth";
+import { getCurrentUser, loginUser, logoutUser, registerUser } from "@/api/auth";
+import type { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from "@/types/auth";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -25,33 +25,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // There's no token to rehydrate from localStorage anymore - it's httpOnly,
-  // so JS can never read it to check. Instead, ask the backend directly
-  // whether the cookie it holds (sent automatically) is still valid.
+  // No token to rehydrate from localStorage - it's httpOnly, so JS can never
+  // read it to check. Ask the backend directly whether the cookie is valid.
   useEffect(() => {
-    api
-      .get<AuthResponse>("/api/auth/me")
+    getCurrentUser()
       .then((response) => setUser(toAuthUser(response)))
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
   }, []);
 
   async function login(payload: LoginPayload) {
-    const response = await api.post<AuthResponse>("/api/auth/login", payload);
+    const response = await loginUser(payload);
     setUser(toAuthUser(response));
   }
 
   async function register(payload: RegisterPayload) {
-    const response = await api.post<AuthResponse>("/api/auth/register", payload);
+    const response = await registerUser(payload);
     setUser(toAuthUser(response));
   }
 
   async function logout() {
     try {
-      await api.post("/api/auth/logout", {});
+      await logoutUser();
     } finally {
-      // Clear client state regardless of whether the request succeeded - the
-      // cookie is either cleared server-side or was already invalid anyway.
       setUser(null);
     }
   }

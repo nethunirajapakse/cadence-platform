@@ -23,13 +23,18 @@ public class WeeklyReportRepositoryImpl implements WeeklyReportRepositoryCustom 
     public Page<WeeklyReport> findForDashboard(
             UUID userId, UUID projectId, ReportStatus status,
             LocalDate weekStart, LocalDate weekEnd, Pageable pageable) {
-    
+
         QWeeklyReport report = QWeeklyReport.weeklyReport;
 
-        // Each filter only joins the predicate if the caller actually supplied it -
-        // this is the whole point of QueryDSL over string-built JPQL here: every
-        // line below is checked against the real WeeklyReport shape at compile time.
         BooleanBuilder predicate = new BooleanBuilder();
+
+        // Drafts are never visible to a manager, per the spec: "only visible
+        // to [the team member]". This is unconditional - it applies even if
+        // a caller explicitly passes ?status=DRAFT, not just when status is
+        // left unfiltered. Enforced here at the query level rather than only
+        // in the frontend, so it can't be bypassed by calling the API directly.
+        predicate.and(report.status.ne(ReportStatus.DRAFT));
+
         if (userId != null) {
             predicate.and(report.user.userId.eq(userId));
         }

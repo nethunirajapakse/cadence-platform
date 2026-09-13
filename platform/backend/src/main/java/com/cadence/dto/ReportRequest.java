@@ -3,14 +3,13 @@ package com.cadence.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
 import java.util.UUID;
 
-// Used for both create (draft) and update (edit while DRAFT/NEEDS_CORRECTION) -
-// the fixed field set the assignment requires, identical for every user.
 @Getter
 @Setter
 public class ReportRequest {
@@ -24,6 +23,7 @@ public class ReportRequest {
     @NotNull(message = "Week end date is required")
     private java.time.LocalDate weekEndDate;
 
+    @Size(max = 2000, message = "Notes must be 2000 characters or fewer")
     private String notes;
 
     @NotEmpty(message = "At least one task is required")
@@ -39,7 +39,6 @@ public class ReportRequest {
     @Valid
     private List<AchievementDto> achievements;
 
-    // Hours by task type - optional per the spec.
     @Valid
     private List<TimeLogDto> timeLogs;
 

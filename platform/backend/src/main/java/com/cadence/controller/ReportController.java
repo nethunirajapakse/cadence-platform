@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,9 +35,6 @@ public class ReportController {
                 .body(reportService.createDraft(principal.getUserId(), request));
     }
 
-    // Ownership-checked: a team member may only edit their OWN report, and only
-    // while it's DRAFT/NEEDS_CORRECTION (the service enforces the status rule;
-    // @PreAuthorize enforces ownership before the service is even called).
     @PutMapping("/{reportId}")
     @PreAuthorize("hasRole('TEAM_MEMBER') and @reportAccessService.isOwner(#reportId, authentication)")
     public ReportResponse update(@PathVariable UUID reportId, @Valid @RequestBody ReportRequest request) {
@@ -60,16 +56,16 @@ public class ReportController {
         return reportService.getOwnHistory(principal.getUserId(), pageable);
     }
 
-    // ---- shared: detail + version history (owner OR any manager) ------------
+    // ---- shared: detail + version history (owner, or manager on non-draft) --
 
     @GetMapping("/{reportId}")
-    @PreAuthorize("hasRole('MANAGER') or @reportAccessService.isOwner(#reportId, authentication)")
+    @PreAuthorize("@reportAccessService.canView(#reportId, authentication)")
     public ReportResponse getDetail(@PathVariable UUID reportId) {
         return reportService.getDetail(reportId);
     }
 
     @GetMapping("/{reportId}/versions")
-    @PreAuthorize("hasRole('MANAGER') or @reportAccessService.isOwner(#reportId, authentication)")
+    @PreAuthorize("@reportAccessService.canView(#reportId, authentication)")
     public List<ReportVersionResponse> getVersions(@PathVariable UUID reportId) {
         return reportService.getVersions(reportId);
     }
@@ -92,5 +88,13 @@ public class ReportController {
     @PreAuthorize("hasRole('MANAGER')")
     public ReportResponse review(@PathVariable UUID reportId, @Valid @RequestBody ReviewRequest request) {
         return reportService.review(reportId, request);
+    }
+
+    // A pure typo-fix action on an existing review comment - see
+    // ReportService.editManagerComment for the 15-minute window / status rules.
+    @PatchMapping("/{reportId}/comment")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ReportResponse editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequest request) {
+        return reportService.editManagerComment(reportId, request.getComment());
     }
 }

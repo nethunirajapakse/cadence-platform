@@ -29,6 +29,12 @@ public class ReportResponse {
     private final List<AchievementDto> achievements;
     private final List<TimeLogDto> timeLogs;
     private final List<NoteLinkDto> noteLinks;
+    // When the current manager comment was first posted - the frontend uses
+    // this plus "now" to decide whether the 15-minute edit window is still open.
+    private final LocalDateTime managerCommentPostedAt;
+    // True once that comment has been corrected at least once - drives the
+    // "(edited)" label.
+    private final boolean managerCommentEdited;
 
     public ReportResponse(
             WeeklyReport report,
@@ -37,7 +43,9 @@ public class ReportResponse {
             List<BlockerDto> blockers,
             List<AchievementDto> achievements,
             List<TimeLogDto> timeLogs,
-            List<NoteLinkDto> noteLinks) {
+            List<NoteLinkDto> noteLinks,
+            LocalDateTime managerCommentPostedAt,
+            boolean managerCommentEdited) {
         this.reportId = report.getReportId();
         this.userId = report.getUser().getUserId();
         this.userName = report.getUser().getName();
@@ -56,5 +64,7 @@ public class ReportResponse {
         this.achievements = achievements;
         this.timeLogs = timeLogs;
         this.noteLinks = noteLinks;
+        this.managerCommentPostedAt = managerCommentPostedAt;
+        this.managerCommentEdited = managerCommentEdited;
     }
 }
