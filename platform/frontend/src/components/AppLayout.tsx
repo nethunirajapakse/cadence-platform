@@ -12,6 +12,7 @@ const TEAM_MEMBER_ITEMS = [
 
 const MANAGER_ITEMS = [
   { key: "/dashboard", label: "Team dashboard" },
+  { key: "/reports/all", label: "All reports" },
   { key: "/projects", label: "Projects" },
 ];
 

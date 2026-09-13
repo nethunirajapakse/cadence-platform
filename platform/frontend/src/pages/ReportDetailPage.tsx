@@ -266,8 +266,6 @@ export function ReportDetailPage() {
       >
         <TextArea
           rows={3}
-          maxLength={1000}
-          showCount
           placeholder={pendingDecision === "APPROVE" ? "Optional note" : "Explain what needs to change"}
           value={reviewComment}
           onChange={(e) => setReviewComment(e.target.value)}
@@ -281,7 +279,7 @@ export function ReportDetailPage() {
         onCancel={() => setEditCommentModalOpen(false)}
         confirmLoading={editCommentMutation.isPending}
       >
-        <TextArea rows={3} maxLength={1000} showCount value={editedComment} onChange={(e) => setEditedComment(e.target.value)} />
+        <TextArea rows={3} value={editedComment} onChange={(e) => setEditedComment(e.target.value)} />
       </Modal>
     </Space>
   );
