@@ -25,9 +25,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResult register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            // Caught by GlobalExceptionHandler and turned into a 409.
             throw new IllegalStateException("An account with this email already exists");
         }
 
@@ -46,13 +45,13 @@ public class AuthService {
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtService.generateToken(principal);
+        AuthResponse userResponse = new AuthResponse(
+                user.getUserId(), user.getName(), user.getEmail(), role.getRoleName().name());
 
-        return new AuthResponse(token, user.getUserId(), user.getName(), user.getEmail(), role.getRoleName().name());
+        return new AuthResult(token, userResponse);
     }
 
-    public AuthResponse login(LoginRequest request) {
-        // Delegates to the DaoAuthenticationProvider wired in SecurityConfig -
-        // this is what actually checks the password against the BCrypt hash.
+    public AuthResult login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -62,8 +61,9 @@ public class AuthService {
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtService.generateToken(principal);
+        AuthResponse userResponse = new AuthResponse(
+                user.getUserId(), user.getName(), user.getEmail(), user.getRole().getRoleName().name());
 
-        return new AuthResponse(token, user.getUserId(), user.getName(), user.getEmail(),
-                user.getRole().getRoleName().name());
+        return new AuthResult(token, userResponse);
     }
 }

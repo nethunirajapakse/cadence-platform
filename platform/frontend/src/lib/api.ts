@@ -1,15 +1,14 @@
-// Thin fetch wrapper. Deliberately not axios - one more dependency isn't worth it
-// for a handful of endpoints, and fetch + a small error-parsing layer covers
-// everything this backend actually returns.
+// Thin fetch wrapper. The auth token itself is an httpOnly cookie the browser
+// attaches automatically - there's no header for this code to set for that.
+// What this layer DOES still need to handle: sending credentials on every
+// request, and echoing the CSRF cookie back as a header on state-changing ones.
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-const TOKEN_KEY = "cadence_token";
 
 export class ApiError extends Error {
   status: number;
-  // Populated only for 400 validation errors (MethodArgumentNotValidException on
-  // the backend), which come back as a field-name -> message map. Everything
-  // else (401 JSON {error}, 409/404 plain text) just uses `message`.
+  // Populated only for 400 validation errors, which come back as a
+  // field-name -> message map from the backend's GlobalExceptionHandler.
   fieldErrors?: Record<string, string>;
 
   constructor(message: string, status: number, fieldErrors?: Record<string, string>) {
@@ -19,16 +18,9 @@ export class ApiError extends Error {
   }
 }
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 async function parseErrorBody(res: Response): Promise<ApiError> {
@@ -41,12 +33,10 @@ async function parseErrorBody(res: Response): Promise<ApiError> {
   try {
     const json = JSON.parse(text);
 
-    // 401 shape from SecurityConfig's authenticationEntryPoint: { "error": "..." }
     if (typeof json === "object" && json !== null && "error" in json) {
       return new ApiError(String(json.error), res.status);
     }
 
-    // 400 shape from GlobalExceptionHandler's validation handler: { field: message, ... }
     if (typeof json === "object" && json !== null) {
       const messages = Object.values(json as Record<string, string>);
       return new ApiError(messages.join(" "), res.status, json as Record<string, string>);
@@ -54,21 +44,34 @@ async function parseErrorBody(res: Response): Promise<ApiError> {
 
     return new ApiError(String(json), res.status);
   } catch {
-    // 409/404 come back as plain text (ResponseEntity<String>), not JSON.
     return new ApiError(text, res.status);
   }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
+  const method = (options.method ?? "GET").toUpperCase();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  // Spring Security's double-submit CSRF check: the server set a (non-httpOnly)
+  // XSRF-TOKEN cookie via CsrfCookieFilter; echoing its value back as a header
+  // proves the request came from a page that could actually read that cookie -
+  // i.e. same-origin JS, not a cross-site form/script. Only needed for methods
+  // that change state; GET/HEAD are never CSRF-checked.
+  if (method !== "GET" && method !== "HEAD") {
+    const csrfToken = getCookie("XSRF-TOKEN");
+    if (csrfToken) {
+      headers["X-XSRF-TOKEN"] = csrfToken;
+    }
+  }
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
+    credentials: "include", // send/receive the httpOnly auth cookie + the CSRF cookie
+    headers,
   });
 
   if (!res.ok) {

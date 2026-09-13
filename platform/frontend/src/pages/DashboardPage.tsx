@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-// Placeholder landing page - just enough to prove the full auth loop works
-// end to end. The real personal-report / team-dashboard views replace this.
 export function DashboardPage() {
   const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    await logout();
+    // No navigate() needed - ProtectedRoute redirects to /login once user becomes null.
+  }
 
   return (
     <div className="min-h-screen bg-paper px-4 py-10">
@@ -17,10 +23,11 @@ export function DashboardPage() {
             </p>
           </div>
           <button
-            onClick={logout}
-            className="border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/30"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/30 disabled:opacity-60"
           >
-            Log out
+            {isLoggingOut ? "Logging out..." : "Log out"}
           </button>
         </div>
       </div>

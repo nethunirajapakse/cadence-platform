@@ -1,15 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, clearToken, getToken, setToken } from "../lib/api";
+import { api } from "../lib/api";
 import type { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from "../types/auth";
-
-const USER_KEY = "cadence_user";
 
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -27,47 +25,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Rehydrate from localStorage on load, so a page refresh doesn't log the user out.
-  // This trusts the stored user record without re-validating the token against the
-  // backend - fine for a 2-day assignment, but a real deployment would want a
-  // "/api/auth/me" check here to catch an expired/invalid token immediately.
+  // There's no token to rehydrate from localStorage anymore - it's httpOnly,
+  // so JS can never read it to check. Instead, ask the backend directly
+  // whether the cookie it holds (sent automatically) is still valid.
   useEffect(() => {
-    const token = getToken();
-    const storedUser = localStorage.getItem(USER_KEY);
-
-    if (token && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser) as AuthUser);
-      } catch {
-        clearToken();
-        localStorage.removeItem(USER_KEY);
-      }
-    }
-
-    setIsLoading(false);
+    api
+      .get<AuthResponse>("/api/auth/me")
+      .then((response) => setUser(toAuthUser(response)))
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
   }, []);
-
-  function persist(response: AuthResponse) {
-    setToken(response.token);
-    const authUser = toAuthUser(response);
-    localStorage.setItem(USER_KEY, JSON.stringify(authUser));
-    setUser(authUser);
-  }
 
   async function login(payload: LoginPayload) {
     const response = await api.post<AuthResponse>("/api/auth/login", payload);
-    persist(response);
+    setUser(toAuthUser(response));
   }
 
   async function register(payload: RegisterPayload) {
     const response = await api.post<AuthResponse>("/api/auth/register", payload);
-    persist(response);
+    setUser(toAuthUser(response));
   }
 
-  function logout() {
-    clearToken();
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
+  async function logout() {
+    try {
+      await api.post("/api/auth/logout", {});
+    } finally {
+      // Clear client state regardless of whether the request succeeded - the
+      // cookie is either cleared server-side or was already invalid anyway.
+      setUser(null);
+    }
   }
 
   return (

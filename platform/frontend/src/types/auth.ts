@@ -12,8 +12,9 @@ export interface LoginPayload {
   password: string;
 }
 
+// No token field - it lives only in the httpOnly cookie now, the frontend
+// never sees or handles it directly.
 export interface AuthResponse {
-  token: string;
   userId: string;
   name: string;
   email: string;

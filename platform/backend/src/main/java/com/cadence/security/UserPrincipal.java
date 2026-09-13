@@ -10,13 +10,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-// Wraps our User entity as a Spring Security principal. The role becomes a
-// single GrantedAuthority of the form "ROLE_TEAM_MEMBER" / "ROLE_MANAGER",
-// which is what @PreAuthorize("hasRole('MANAGER')") checks against.
 @Getter
 public class UserPrincipal implements UserDetails {
 
     private final UUID userId;
+    private final String name;
     private final String email;
     private final String passwordHash;
     private final boolean active;
@@ -24,6 +22,7 @@ public class UserPrincipal implements UserDetails {
 
     public UserPrincipal(User user) {
         this.userId = user.getUserId();
+        this.name = user.getName();
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.active = user.isActive();
