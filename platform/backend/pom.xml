@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -100,6 +100,12 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.querydsl</groupId>
+			<artifactId>querydsl-jpa</artifactId>
+			<version>5.1.0</version>
+			<classifier>jakarta</classifier>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -124,6 +130,16 @@
 									<groupId>org.projectlombok</groupId>
 									<artifactId>lombok</artifactId>
 								</path>
+								<path>
+									<groupId>com.querydsl</groupId>
+									<artifactId>querydsl-apt</artifactId>
+									<version>5.1.0</version>
+									<classifier>jakarta</classifier>
+								</path>
+								<path>
+									<groupId>jakarta.persistence</groupId>
+									<artifactId>jakarta.persistence-api</artifactId>
+								</path>
 							</annotationProcessorPaths>
 						</configuration>
 					</execution>
@@ -131,13 +147,22 @@
 						<id>default-testCompile</id>
 						<phase>test-compile</phase>
 						<goals>
-							<goal>testCompile</goal>
 						</goals>
 						<configuration>
 							<annotationProcessorPaths>
 								<path>
 									<groupId>org.projectlombok</groupId>
 									<artifactId>lombok</artifactId>
+								</path>
+								<path>
+									<groupId>com.querydsl</groupId>
+									<artifactId>querydsl-apt</artifactId>
+									<version>5.1.0</version>
+									<classifier>jakarta</classifier>
+								</path>
+								<path>
+									<groupId>jakarta.persistence</groupId>
+									<artifactId>jakarta.persistence-api</artifactId>
 								</path>
 							</annotationProcessorPaths>
 						</configuration>
