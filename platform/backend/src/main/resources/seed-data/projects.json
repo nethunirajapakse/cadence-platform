@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Northwind Ledger",
+    "description": "FinTech client - accounting and reconciliation platform"
+  },
+  {
+    "name": "MediSync Portal",
+    "description": "Healthcare client - patient records and appointment portal"
+  },
+  {
+    "name": "Cargoflow",
+    "description": "Logistics client - shipment tracking and fleet dashboard"
+  },
+  {
+    "name": "Internal Tooling",
+    "description": "Internal platform and developer-experience work"
+  },
+  {
+    "name": "Platform & Data Infrastructure",
+    "description": "Core data pipelines, warehousing, and platform reliability"
+  },
+  {
+    "name": "Cadence AI Assistant",
+    "description": "R&D - conversational assistant for internal knowledge search"
+  },
+  {
+    "name": "Marketing Site Revamp",
+    "description": "Public marketing site redesign and campaign tooling"
+  },
+  {
+    "name": "Cadence Go (Mobile)",
+    "description": "Companion mobile app for on-the-go report submission"
+  },
+  {
+    "name": "Security & Compliance Hardening",
+    "description": "Audit remediation, access control, and compliance tooling"
+  }
+]

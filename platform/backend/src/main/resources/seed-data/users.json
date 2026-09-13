@@ -1,0 +1,176 @@
+[
+  {
+    "name": "Dilani Wickramasinghe",
+    "email": "dilani.wickramasinghe@cadence.dev",
+    "password": "Password123!",
+    "role": "MANAGER"
+  },
+  {
+    "name": "Amara Silva",
+    "email": "amara.silva@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Kavindu Perera",
+    "email": "kavindu.perera@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Nadeesha Fernando",
+    "email": "nadeesha.fernando@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Ruwan Jayasuriya",
+    "email": "ruwan.jayasuriya@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Buddhika Kularatne",
+    "email": "buddhika.kularatne@cadence.dev",
+    "password": "Password123!",
+    "role": "MANAGER"
+  },
+  {
+    "name": "Imesha Ekanayake",
+    "email": "imesha.ekanayake@cadence.dev",
+    "password": "Password123!",
+    "role": "MANAGER"
+  },
+  {
+    "name": "Sachini Yapa",
+    "email": "sachini.yapa@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Chamari Liyanage",
+    "email": "chamari.liyanage@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Umesha Kularatne",
+    "email": "umesha.kularatne@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Manoj Thilakarathna",
+    "email": "manoj.thilakarathna@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Gayan Obeysekera",
+    "email": "gayan.obeysekera@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Sachini Obeysekera",
+    "email": "sachini.obeysekera@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Rashmi Gunawardena",
+    "email": "rashmi.gunawardena@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Dinesh Vithanage",
+    "email": "dinesh.vithanage@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Buddhika Obeysekera",
+    "email": "buddhika.obeysekera@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Nayana Ekanayake",
+    "email": "nayana.ekanayake@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Sachini Illangakoon",
+    "email": "sachini.illangakoon@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Malith Herath",
+    "email": "malith.herath@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Vishwa Gunawardena",
+    "email": "vishwa.gunawardena@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Chamari Yapa",
+    "email": "chamari.yapa@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Buddhika Vithanage",
+    "email": "buddhika.vithanage@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Chamari Weerasinghe",
+    "email": "chamari.weerasinghe@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Gayan Yapa",
+    "email": "gayan.yapa@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Lasitha Liyanage",
+    "email": "lasitha.liyanage@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Janaki Peiris",
+    "email": "janaki.peiris@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Anjali Herath",
+    "email": "anjali.herath@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Gayan Udugampola",
+    "email": "gayan.udugampola@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  },
+  {
+    "name": "Rashmi Vithanage",
+    "email": "rashmi.vithanage@cadence.dev",
+    "password": "Password123!",
+    "role": "TEAM_MEMBER"
+  }
+]
