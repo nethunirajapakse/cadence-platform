@@ -20,7 +20,7 @@ public class Project {
     @Column(name = "project_id")
     private UUID projectId;
 
-    @Column(name = "name", nullable = false, length = 120)
+    @Column(name = "name", nullable = false, length = 120, unique = true)
     private String name;
 
     @Column(name = "description", length = 500)

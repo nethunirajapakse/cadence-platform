@@ -1,4 +1,14 @@
-import { Card, Col, Row, Statistic, Typography, Progress, Space, List, Tag } from "antd";
+import {
+  Card,
+  Col,
+  Row,
+  Statistic,
+  Typography,
+  Progress,
+  Space,
+  List,
+  Tag,
+} from "antd";
 import {
   LineChart,
   Line,
@@ -43,7 +53,10 @@ export function TeamDashboardPage() {
 
   const compliance = summary?.compliance;
   const complianceTotal = compliance?.totalExpected ?? 0;
-  const compliancePct = complianceTotal > 0 ? Math.round(((compliance?.submitted ?? 0) / complianceTotal) * 100) : 0;
+  const compliancePct =
+    complianceTotal > 0
+      ? Math.round(((compliance?.submitted ?? 0) / complianceTotal) * 100)
+      : 0;
 
   return (
     <Space direction="vertical" size="large" style={{ width: "100%" }}>
@@ -55,17 +68,28 @@ export function TeamDashboardPage() {
       <Row gutter={16}>
         <Col span={6}>
           <Card loading={isSummaryFetching}>
-            <Statistic title="Submitted this week" value={summary?.totalReportsSubmittedThisWeek ?? 0} />
+            <Statistic
+              title="Submitted this week"
+              value={summary?.totalReportsSubmittedThisWeek ?? 0}
+            />
           </Card>
         </Col>
         <Col span={6}>
           <Card loading={isSummaryFetching}>
-            <Statistic title="Needs correction" value={summary?.needsCorrectionCount ?? 0} valueStyle={{ color: COLORS.ochre }} />
+            <Statistic
+              title="Needs correction"
+              value={summary?.needsCorrectionCount ?? 0}
+              valueStyle={{ color: COLORS.ochre }}
+            />
           </Card>
         </Col>
         <Col span={6}>
           <Card loading={isSummaryFetching}>
-            <Statistic title="Open blockers" value={summary?.openBlockersCount ?? 0} valueStyle={{ color: COLORS.ochre }} />
+            <Statistic
+              title="Open blockers"
+              value={summary?.openBlockersCount ?? 0}
+              valueStyle={{ color: COLORS.ochre }}
+            />
           </Card>
         </Col>
         <Col span={6}>
@@ -94,24 +118,14 @@ export function TeamDashboardPage() {
             <XAxis dataKey="weekStartDate" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
             <Tooltip />
-            <Line type="monotone" dataKey="tasksCompleted" name="Tasks completed" stroke={COLORS.teal} strokeWidth={2} />
+            <Line
+              type="monotone"
+              dataKey="tasksCompleted"
+              name="Tasks completed"
+              stroke={COLORS.teal}
+              strokeWidth={2}
+            />
           </LineChart>
-        </ResponsiveContainer>
-      </Card>
-
-      {/* ---- Status by member ---- */}
-      <Card title="Report status by team member">
-        <ResponsiveContainer width="100%" height={Math.max(280, statusByMember.length * 32)}>
-          <BarChart data={statusByMember} layout="vertical" margin={{ left: 40 }}>
-            <CartesianGrid stroke={COLORS.hairline} strokeDasharray="3 3" />
-            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-            <YAxis type="category" dataKey="userName" width={140} tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="approved" name="Approved" stackId="a" fill={COLORS.teal} />
-            <Bar dataKey="submitted" name="Submitted" stackId="a" fill={COLORS.muted} />
-            <Bar dataKey="needsCorrection" name="Needs correction" stackId="a" fill={COLORS.ochre} />
-          </BarChart>
         </ResponsiveContainer>
       </Card>
 
@@ -120,10 +134,23 @@ export function TeamDashboardPage() {
         <Col span={12}>
           <Card title="Workload by project (task count)">
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={workloadByProject} layout="vertical" margin={{ left: 20 }}>
+              <BarChart
+                data={workloadByProject}
+                layout="vertical"
+                margin={{ left: 20 }}
+              >
                 <CartesianGrid stroke={COLORS.hairline} strokeDasharray="3 3" />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="projectName" width={160} tick={{ fontSize: 11 }} />
+                <XAxis
+                  type="number"
+                  allowDecimals={false}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="projectName"
+                  width={160}
+                  tick={{ fontSize: 11 }}
+                />
                 <Tooltip />
                 <Bar dataKey="taskCount" name="Tasks" fill={COLORS.teal} />
               </BarChart>
@@ -146,7 +173,10 @@ export function TeamDashboardPage() {
                   label={(entry) => `${entry.taskType}: ${entry.totalHours}h`}
                 >
                   {timeByTaskType.map((_, index) => (
-                    <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    <Cell
+                      key={index}
+                      fill={PIE_COLORS[index % PIE_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -165,7 +195,8 @@ export function TeamDashboardPage() {
               <Space direction="vertical" size={0}>
                 <span>{item.description}</span>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {item.projectName} · {new Date(item.actionAt).toLocaleString()}
+                  {item.projectName} ·{" "}
+                  {new Date(item.actionAt).toLocaleString()}
                 </Typography.Text>
               </Space>
             </List.Item>

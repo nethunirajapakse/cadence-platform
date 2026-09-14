@@ -1,8 +1,8 @@
 import api from "@/lib/axios";
-import type { Project, ProjectRequest } from "@/types/project";
+import type { Project, ProjectRequest, ProjectFilterCriteria } from "@/types/project";
 
-export const getProjects = async (): Promise<Project[]> => {
-  const response = await api.get("/api/projects");
+export const getProjects = async (filters: ProjectFilterCriteria = {}): Promise<Project[]> => {
+  const response = await api.get("/api/projects", { params: filters });
   return response.data;
 };
 

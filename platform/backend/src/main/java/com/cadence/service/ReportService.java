@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -79,10 +78,6 @@ public class ReportService {
 
     // ---- submit / review ---------------------------------------------------
 
-    // Submitting (first time) or resubmitting (after NEEDS_CORRECTION) both land
-    // here - the only difference is the status it's coming from, and both take
-    // a fresh version snapshot, which is what the review workflow's version
-    // history is built on.
     public ReportResponse submit(UUID reportId) {
         WeeklyReport report = findOrThrow(reportId);
 
@@ -115,7 +110,7 @@ public class ReportService {
         if (request.getDecision() == ReviewDecision.APPROVE) {
             report.setStatus(ReportStatus.APPROVED);
             report.setApprovedAt(LocalDateTime.now());
-            applyComment(currentVersion, request.getComment()); // optional note on approval
+            applyComment(currentVersion, request.getComment());
         } else {
             if (request.getComment() == null || request.getComment().isBlank()) {
                 throw new IllegalStateException("A comment is required when requesting changes");
@@ -131,9 +126,6 @@ public class ReportService {
         return toResponse(report);
     }
 
-    // Sets a NEW comment - always resets the posted-at anchor and clears the
-    // edited flag, since this is a fresh comment from a fresh review action,
-    // not a correction of the previous one.
     private void applyComment(ReportVersion version, String comment) {
         version.setComment(comment);
         if (comment != null && !comment.isBlank()) {
@@ -142,13 +134,6 @@ public class ReportService {
         }
     }
 
-    // A pure typo-fix path: corrects the wording of an existing comment
-    // without touching the report's status or triggering a new review cycle.
-    // Only allowed within COMMENT_EDIT_WINDOW_MINUTES of the comment's
-    // original commentPostedAt - after that, the comment is considered
-    // settled, so a team member who already read it can trust it won't
-    // silently change later. Also scoped to NEEDS_CORRECTION, same reasoning
-    // as before: that's the one status where this comment is the current one.
     public ReportResponse editManagerComment(UUID reportId, String newComment) {
         WeeklyReport report = findOrThrow(reportId);
 
@@ -173,7 +158,7 @@ public class ReportService {
 
         report.setManagerComment(newComment);
         currentVersion.setComment(newComment);
-        currentVersion.setCommentEdited(true); // commentPostedAt is deliberately NOT reset here
+        currentVersion.setCommentEdited(true);
 
         weeklyReportRepository.save(report);
         reportVersionRepository.save(currentVersion);
@@ -195,9 +180,8 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReportSummaryResponse> getDashboard(
-            UUID userId, UUID projectId, ReportStatus status, LocalDate weekStart, LocalDate weekEnd, Pageable pageable) {
-        return weeklyReportRepository.findForDashboard(userId, projectId, status, weekStart, weekEnd, pageable)
+    public Page<ReportSummaryResponse> getDashboard(ReportFilterCriteria criteria, Pageable pageable) {
+        return weeklyReportRepository.findForDashboard(criteria, pageable)
                 .map(ReportSummaryResponse::new);
     }
 
@@ -281,11 +265,6 @@ public class ReportService {
         }
     }
 
-    // Marks the previous current version (if any) as no longer current, then
-    // inserts a new one holding a JSON snapshot of the report's content right
-    // now - before the status change that's about to happen. This is what lets
-    // a manager later browse "what did version 2 actually say" independent of
-    // whatever the report looks like after further edits.
     @SneakyThrows
     private void snapshotVersion(WeeklyReport report) {
         reportVersionRepository.findByReport_ReportIdAndCurrentTrue(report.getReportId())
@@ -298,10 +277,6 @@ public class ReportService {
                 .findByReport_ReportIdOrderByVersionNumberAsc(report.getReportId())
                 .size() + 1;
 
-        // Snapshotting the DTOs, not the entities - a ReportTask entity holds a
-        // back-reference to its parent WeeklyReport, so serializing the entities
-        // directly would either loop forever or trip the same lazy-loading error
-        // we hit earlier with the auth flow. DTOs have no such back-reference.
         Map<String, Object> snapshot = Map.of(
                 "weekStartDate", report.getWeekStartDate(),
                 "weekEndDate", report.getWeekEndDate(),
@@ -343,8 +318,6 @@ public class ReportService {
                 currentVersion != null ? currentVersion.getCommentPostedAt() : null,
                 currentVersion != null && currentVersion.isCommentEdited());
     }
-
-    // ---- entity -> DTO mappers, shared by toResponse() and the version snapshot ----
 
     private List<ReportTaskDto> mapTasks(WeeklyReport report) {
         return report.getTasks().stream().map(t -> {

@@ -1,5 +1,6 @@
 package com.cadence.repository;
 
+import com.cadence.dto.ReportFilterCriteria;
 import com.cadence.entity.QWeeklyReport;
 import com.cadence.entity.WeeklyReport;
 import com.cadence.entity.enums.ReportStatus;
@@ -10,9 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @RequiredArgsConstructor
 public class WeeklyReportRepositoryImpl implements WeeklyReportRepositoryCustom {
@@ -20,35 +19,36 @@ public class WeeklyReportRepositoryImpl implements WeeklyReportRepositoryCustom 
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<WeeklyReport> findForDashboard(
-            UUID userId, UUID projectId, ReportStatus status,
-            LocalDate weekStart, LocalDate weekEnd, Pageable pageable) {
-
+    public Page<WeeklyReport> findForDashboard(ReportFilterCriteria criteria, Pageable pageable) {
         QWeeklyReport report = QWeeklyReport.weeklyReport;
 
         BooleanBuilder predicate = new BooleanBuilder();
 
-        // Drafts are never visible to a manager, per the spec: "only visible
-        // to [the team member]". This is unconditional - it applies even if
-        // a caller explicitly passes ?status=DRAFT, not just when status is
-        // left unfiltered. Enforced here at the query level rather than only
-        // in the frontend, so it can't be bypassed by calling the API directly.
+        // Drafts are never visible to a manager, per the spec - unconditional,
+        // applies even if a caller explicitly passes statuses containing DRAFT.
         predicate.and(report.status.ne(ReportStatus.DRAFT));
 
-        if (userId != null) {
-            predicate.and(report.user.userId.eq(userId));
+        if (criteria.getUserId() != null) {
+            predicate.and(report.user.userId.eq(criteria.getUserId()));
         }
-        if (projectId != null) {
-            predicate.and(report.project.projectId.eq(projectId));
+
+        List<java.util.UUID> projectIds = criteria.getProjectIds();
+        if (projectIds != null && !projectIds.isEmpty()) {
+            predicate.and(criteria.isExcludeProjects()
+                    ? report.project.projectId.notIn(projectIds)
+                    : report.project.projectId.in(projectIds));
         }
-        if (status != null) {
-            predicate.and(report.status.eq(status));
+
+        List<ReportStatus> statuses = criteria.getStatuses();
+        if (statuses != null && !statuses.isEmpty()) {
+            predicate.and(report.status.in(statuses));
         }
-        if (weekStart != null) {
-            predicate.and(report.weekStartDate.goe(weekStart));
+
+        if (criteria.getWeekStart() != null) {
+            predicate.and(report.weekStartDate.goe(criteria.getWeekStart()));
         }
-        if (weekEnd != null) {
-            predicate.and(report.weekEndDate.loe(weekEnd));
+        if (criteria.getWeekEnd() != null) {
+            predicate.and(report.weekEndDate.loe(criteria.getWeekEnd()));
         }
 
         List<WeeklyReport> content = queryFactory

@@ -1,7 +1,6 @@
 package com.cadence.controller;
 
 import com.cadence.dto.*;
-import com.cadence.entity.enums.ReportStatus;
 import com.cadence.security.UserPrincipal;
 import com.cadence.service.ReportService;
 import jakarta.validation.Valid;
@@ -14,7 +13,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -72,16 +70,13 @@ public class ReportController {
 
     // ---- manager: dashboard + review -----------------------------------------
 
+    // criteria is populated by Spring MVC's implicit @ModelAttribute binding -
+    // its fields (userId, projectIds, excludeProjects, statuses, weekStart,
+    // weekEnd) map directly onto matching query parameter names.
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public Page<ReportSummaryResponse> dashboard(
-            @RequestParam(required = false) UUID userId,
-            @RequestParam(required = false) UUID projectId,
-            @RequestParam(required = false) ReportStatus status,
-            @RequestParam(required = false) LocalDate weekStart,
-            @RequestParam(required = false) LocalDate weekEnd,
-            Pageable pageable) {
-        return reportService.getDashboard(userId, projectId, status, weekStart, weekEnd, pageable);
+    public Page<ReportSummaryResponse> dashboard(ReportFilterCriteria criteria, Pageable pageable) {
+        return reportService.getDashboard(criteria, pageable);
     }
 
     @PostMapping("/{reportId}/review")
@@ -90,8 +85,6 @@ public class ReportController {
         return reportService.review(reportId, request);
     }
 
-    // A pure typo-fix action on an existing review comment - see
-    // ReportService.editManagerComment for the 15-minute window / status rules.
     @PatchMapping("/{reportId}/comment")
     @PreAuthorize("hasRole('MANAGER')")
     public ReportResponse editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequest request) {

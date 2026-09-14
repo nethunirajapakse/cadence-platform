@@ -1,15 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getProjects, createProject, updateProject, deleteProject } from "@/api/projects";
-import type { ProjectRequest } from "@/types/project";
+import type { ProjectRequest, ProjectFilterCriteria } from "@/types/project";
 
-export const useProjects = () => {
+export const useProjects = (filters: ProjectFilterCriteria = {}) => {
   const {
     data,
     isFetching: isProjectsFetching,
     error: projectsError,
   } = useQuery({
-    queryKey: ["projects"],
-    queryFn: getProjects,
+    queryKey: ["projects", filters],
+    queryFn: () => getProjects(filters),
   });
 
   return {

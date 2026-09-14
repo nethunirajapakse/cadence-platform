@@ -1,5 +1,6 @@
 package com.cadence.controller;
 
+import com.cadence.dto.ProjectFilterCriteria;
 import com.cadence.dto.ProjectRequest;
 import com.cadence.dto.ProjectResponse;
 import com.cadence.service.ProjectService;
@@ -20,11 +21,12 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
-    // Any authenticated user can list projects - team members need this to pick
-    // a project when creating a report, not just managers.
+    // criteria is populated by Spring MVC's implicit @ModelAttribute binding,
+    // same pattern as ReportController's dashboard endpoint - ?name=foo&
+    // description=bar map straight onto ProjectFilterCriteria's fields.
     @GetMapping
-    public List<ProjectResponse> list() {
-        return projectService.listAll();
+    public List<ProjectResponse> list(ProjectFilterCriteria criteria) {
+        return projectService.listAll(criteria);
     }
 
     @PostMapping
