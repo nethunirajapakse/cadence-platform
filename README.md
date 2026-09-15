@@ -18,7 +18,6 @@ The application consists of a React single-page application, a Spring Boot REST 
 ```text
 .
 ├── README.md
-├── architecture-diagram.md       # Architecture and request-flow diagram
 └── platform/
     ├── frontend/                 # React/Vite client
     │   ├── src/api/              # API-specific clients
