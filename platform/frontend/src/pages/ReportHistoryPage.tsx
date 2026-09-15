@@ -150,7 +150,7 @@ export function ReportHistoryPage() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
+      <Space wrap style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
         <Typography.Title level={4} style={{ margin: 0 }}>
           My reports
         </Typography.Title>
@@ -163,6 +163,7 @@ export function ReportHistoryPage() {
         columns={columns}
         dataSource={reports}
         loading={isReportsFetching}
+        scroll={{ x: "max-content" }}
         pagination={{
           current: page + 1,
           pageSize: size,

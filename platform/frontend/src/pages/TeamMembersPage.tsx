@@ -111,6 +111,7 @@ export function TeamMembersPage() {
         columns={columns}
         dataSource={teamMemberOverview}
         loading={isTeamMemberOverviewFetching}
+        scroll={{ x: "max-content" }}
         pagination={{
           current: page + 1,
           pageSize: size,

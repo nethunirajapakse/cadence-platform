@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Card, Descriptions, Table, Tag, Button, Space, Input, Modal, Typography, List, message } from "antd";
+import { Card, Descriptions, Table, Tag, Button, Space, Input, Modal, Typography, List, message, Grid } from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -27,6 +27,8 @@ export function ReportDetailPage() {
   const submitMutation = useSubmitReport();
   const reviewMutation = useReviewReport();
   const editCommentMutation = useEditReportComment();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<ReviewDecision | null>(null);
@@ -112,14 +114,14 @@ export function ReportDetailPage() {
         title={`${report.projectName} — ${report.weekStartDate} to ${report.weekEndDate}`}
         extra={<StatusTag status={report.status} />}
       >
-        <Descriptions column={2} size="small">
+        <Descriptions column={isMobile ? 1 : 2} size="small">
           <Descriptions.Item label="Team member">{report.userName}</Descriptions.Item>
           <Descriptions.Item label="Submitted">{report.submittedAt ?? "—"}</Descriptions.Item>
         </Descriptions>
 
         {report.managerComment && (
           <Card size="small" style={{ marginTop: 12, borderColor: "#B8802E" }}>
-            <Space style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <Space wrap style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <Typography.Text strong>Manager comment: </Typography.Text>
                 {report.managerComment}
@@ -144,7 +146,7 @@ export function ReportDetailPage() {
 
         {report.notes && <p style={{ marginTop: 12 }}>{report.notes}</p>}
 
-        <Space style={{ marginTop: 16 }}>
+        <Space wrap style={{ marginTop: 16 }}>
           {canEdit && (
             <Link to={`/reports/${reportId}/edit`}>
               <Button>Edit</Button>
@@ -174,6 +176,7 @@ export function ReportDetailPage() {
           rowKey="taskName"
           pagination={false}
           dataSource={report.tasks}
+          scroll={{ x: "max-content" }}
           columns={[
             { title: "Task", dataIndex: "taskName" },
             { title: "Priority", dataIndex: "priority" },

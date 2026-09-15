@@ -135,7 +135,7 @@ export function ProjectsPage() {
 
   return (
     <Space direction="vertical" size="large" style={{ width: "100%" }}>
-      <Space style={{ display: "flex", justifyContent: "space-between" }}>
+      <Space wrap style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <Typography.Title level={4} style={{ margin: 0 }}>
           Projects
         </Typography.Title>
@@ -150,6 +150,7 @@ export function ProjectsPage() {
         dataSource={projects}
         pagination={false}
         columns={columns}
+        scroll={{ x: "max-content" }}
       />
 
       <Modal

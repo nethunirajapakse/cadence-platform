@@ -1,4 +1,4 @@
-import { Card, Col, Row, Statistic, Typography, Progress, Space, List, Tag } from "antd";
+import { Card, Col, Row, Statistic, Typography, Progress, Space, List, Tag, Grid } from "antd";
 import {
   LineChart,
   Line,
@@ -34,6 +34,8 @@ const COLORS = {
 const PIE_COLORS = ["#2F6F63", "#B8802E", "#5B665F", "#8FA998", "#D8B26A"];
 
 export function TeamDashboardPage() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const { summary, isSummaryFetching } = useDashboardSummary();
   const { tasksTrend } = useTasksTrend();
   const { statusByMember } = useStatusByMember();
@@ -53,22 +55,22 @@ export function TeamDashboardPage() {
 
       {/* ---- Summary metrics ---- */}
       <Row gutter={16}>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card loading={isSummaryFetching}>
             <Statistic title="Submitted this week" value={summary?.totalReportsSubmittedThisWeek ?? 0} />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card loading={isSummaryFetching}>
             <Statistic title="Needs correction" value={summary?.needsCorrectionCount ?? 0} valueStyle={{ color: COLORS.ochre }} />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card loading={isSummaryFetching}>
             <Statistic title="Open blockers" value={summary?.openBlockersCount ?? 0} valueStyle={{ color: COLORS.ochre }} />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card loading={isSummaryFetching}>
             <Typography.Text type="secondary" style={{ fontSize: 13 }}>
               Compliance this week
@@ -91,7 +93,7 @@ export function TeamDashboardPage() {
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={tasksTrend}>
             <CartesianGrid stroke={COLORS.hairline} strokeDasharray="3 3" />
-            <XAxis dataKey="weekStartDate" tick={{ fontSize: 12 }} />
+            <XAxis dataKey="weekStartDate" tick={{ fontSize: 12 }} interval={isMobile ? "preserveStartEnd" : 0} />
             <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
             <Tooltip />
             <Line type="monotone" dataKey="tasksCompleted" name="Tasks completed" stroke={COLORS.teal} strokeWidth={2} />
@@ -99,31 +101,15 @@ export function TeamDashboardPage() {
         </ResponsiveContainer>
       </Card>
 
-      {/* ---- Status by member ---- */}
-      <Card title="Report status by team member">
-        <ResponsiveContainer width="100%" height={Math.max(280, statusByMember.length * 32)}>
-          <BarChart data={statusByMember} layout="vertical" margin={{ left: 40 }}>
-            <CartesianGrid stroke={COLORS.hairline} strokeDasharray="3 3" />
-            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-            <YAxis type="category" dataKey="userName" width={140} tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="approved" name="Approved" stackId="a" fill={COLORS.teal} />
-            <Bar dataKey="submitted" name="Submitted" stackId="a" fill={COLORS.muted} />
-            <Bar dataKey="needsCorrection" name="Needs correction" stackId="a" fill={COLORS.ochre} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-
       <Row gutter={16}>
         {/* ---- Workload by project ---- */}
-        <Col span={12}>
+        <Col xs={24} lg={12}>
           <Card title="Workload by project (task count)">
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={workloadByProject} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid stroke={COLORS.hairline} strokeDasharray="3 3" />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="projectName" width={160} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="projectName" width={isMobile ? 100 : 160} tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Bar dataKey="taskCount" name="Tasks" fill={COLORS.teal} />
               </BarChart>
@@ -132,7 +118,7 @@ export function TeamDashboardPage() {
         </Col>
 
         {/* ---- Time by task type ---- */}
-        <Col span={12}>
+        <Col xs={24} lg={12}>
           <Card title="Time spent by task type (team-wide)">
             <ResponsiveContainer width="100%" height={320}>
               <PieChart>
@@ -142,8 +128,8 @@ export function TeamDashboardPage() {
                   nameKey="taskType"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
-                  label={(entry) => `${entry.name}: ${entry.value}h`}
+                  outerRadius={isMobile ? 80 : 100}
+                  label={isMobile ? false : (entry) => `${entry.name}: ${entry.value}h`}
                 >
                   {timeByTaskType.map((_, index) => (
                     <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />

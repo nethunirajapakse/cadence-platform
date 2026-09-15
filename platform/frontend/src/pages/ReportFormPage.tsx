@@ -11,6 +11,7 @@ import {
   Space,
   Divider,
   Checkbox,
+  Grid,
   message,
 } from "antd";
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
@@ -36,6 +37,8 @@ export function ReportFormPage() {
   const isEdit = !!reportId;
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const { projects } = useProjects();
   const { report, isReportFetching } = useReportDetail(reportId);
@@ -113,14 +116,14 @@ export function ReportFormPage() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <Card title={isEdit ? "Edit weekly report" : "New weekly report"} style={{ maxWidth: 960 }}>
+    <Card title={isEdit ? "Edit weekly report" : "New weekly report"} style={{ maxWidth: 960, width: "100%" }}>
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Space size="large" align="start" wrap>
+        <Space size="large" align="start" wrap style={{ width: "100%" }}>
           <Form.Item
             name="projectId"
             label="Project"
             rules={[{ required: true, message: "Pick a project" }]}
-            style={{ minWidth: 240 }}
+            style={{ minWidth: isMobile ? undefined : 240, width: isMobile ? "100%" : undefined }}
           >
             <Select
               placeholder="Select project"
@@ -128,7 +131,7 @@ export function ReportFormPage() {
             />
           </Form.Item>
           <Form.Item name="weekRange" label="Week" rules={[{ required: true, message: "Pick the week" }]}>
-            <RangePicker />
+            <RangePicker style={{ width: isMobile ? "100%" : undefined }} />
           </Form.Item>
         </Space>
 
@@ -147,30 +150,30 @@ export function ReportFormPage() {
                   style={{ marginBottom: 12 }}
                   extra={<MinusCircleOutlined onClick={() => remove(name)} />}
                 >
-                  <Space wrap align="start">
+                  <Space wrap align="start" style={{ width: "100%" }}>
                     <Form.Item {...rest} name={[name, "taskName"]} label="Task" rules={[{ required: true }]}>
-                      <TextArea maxLength={200} showCount autoSize={{ minRows: 1, maxRows: 1 }} style={{ width: 220 }} />
+                      <TextArea maxLength={200} showCount autoSize={{ minRows: 1, maxRows: 1 }} style={{ width: isMobile ? "100%" : 220 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "priority"]} label="Priority" rules={[{ required: true }]}>
-                      <Select options={PRIORITY_OPTIONS} style={{ width: 120 }} />
+                      <Select options={PRIORITY_OPTIONS} style={{ width: isMobile ? "100%" : 120 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "status"]} label="Status" rules={[{ required: true }]}>
-                      <Select options={TASK_STATUS_OPTIONS} style={{ width: 150 }} />
+                      <Select options={TASK_STATUS_OPTIONS} style={{ width: isMobile ? "100%" : 150 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "plannedPct"]} label="Planned %">
-                      <InputNumber min={0} max={100} style={{ width: 100 }} />
+                      <InputNumber min={0} max={100} style={{ width: isMobile ? "100%" : 100 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "actualPct"]} label="Actual %">
-                      <InputNumber min={0} max={100} style={{ width: 100 }} />
+                      <InputNumber min={0} max={100} style={{ width: isMobile ? "100%" : 100 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "timePlanned"]} label="Time planned (h)">
-                      <InputNumber min={0} step={0.5} style={{ width: 130 }} />
+                      <InputNumber min={0} step={0.5} style={{ width: isMobile ? "100%" : 130 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "timeSpent"]} label="Time spent (h)">
-                      <InputNumber min={0} step={0.5} style={{ width: 130 }} />
+                      <InputNumber min={0} step={0.5} style={{ width: isMobile ? "100%" : 130 }} />
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "deliverable"]} label="Deliverable">
-                      <TextArea maxLength={300} showCount autoSize={{ minRows: 1, maxRows: 1 }} style={{ width: 220 }} />
+                      <TextArea maxLength={300} showCount autoSize={{ minRows: 1, maxRows: 1 }} style={{ width: isMobile ? "100%" : 220 }} />
                     </Form.Item>
                   </Space>
                 </Card>
@@ -191,18 +194,18 @@ export function ReportFormPage() {
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name, ...rest }) => (
-                <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
+                <Space key={key} wrap align="baseline" style={{ display: "flex", marginBottom: 8, width: "100%" }}>
                   <Form.Item {...rest} name={[name, "taskDescription"]} rules={[{ required: true }]}>
                     <TextArea
                       maxLength={300}
                       showCount
                       autoSize={{ minRows: 1, maxRows: 1 }}
                       placeholder="Task"
-                      style={{ width: 320 }}
+                      style={{ width: isMobile ? "100%" : 320 }}
                     />
                   </Form.Item>
                   <Form.Item {...rest} name={[name, "priority"]}>
-                    <Select options={PRIORITY_OPTIONS} placeholder="Priority" style={{ width: 120 }} />
+                    <Select options={PRIORITY_OPTIONS} placeholder="Priority" style={{ width: isMobile ? "100%" : 120 }} />
                   </Form.Item>
                   <MinusCircleOutlined onClick={() => remove(name)} />
                 </Space>
@@ -223,14 +226,14 @@ export function ReportFormPage() {
                   {fields.map(({ key, name, ...rest }) => {
                     const isKey = form.getFieldValue(["blockers", name, "keyIssue"]);
                     return (
-                      <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
+                      <Space key={key} wrap align="baseline" style={{ display: "flex", marginBottom: 8, width: "100%" }}>
                         <Form.Item {...rest} name={[name, "description"]} rules={[{ required: true }]}>
                           <TextArea
                             maxLength={500}
                             showCount
                             autoSize={{ minRows: 1, maxRows: 1 }}
                             placeholder="Blocker"
-                            style={{ width: 360 }}
+                            style={{ width: isMobile ? "100%" : 360 }}
                           />
                         </Form.Item>
                         <Button
@@ -271,14 +274,14 @@ export function ReportFormPage() {
                   {fields.map(({ key, name, ...rest }) => {
                     const isKey = form.getFieldValue(["achievements", name, "keyAchievement"]);
                     return (
-                      <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
+                      <Space key={key} wrap align="baseline" style={{ display: "flex", marginBottom: 8, width: "100%" }}>
                         <Form.Item {...rest} name={[name, "description"]} rules={[{ required: true }]}>
                           <TextArea
                             maxLength={500}
                             showCount
                             autoSize={{ minRows: 1, maxRows: 1 }}
                             placeholder="Achievement"
-                            style={{ width: 360 }}
+                            style={{ width: isMobile ? "100%" : 360 }}
                           />
                         </Form.Item>
                         <Button
@@ -315,12 +318,12 @@ export function ReportFormPage() {
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name, ...rest }) => (
-                <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
+                <Space key={key} wrap align="baseline" style={{ display: "flex", marginBottom: 8, width: "100%" }}>
                   <Form.Item {...rest} name={[name, "taskType"]} rules={[{ required: true }]}>
-                    <Select options={TASK_TYPE_OPTIONS} placeholder="Type" style={{ width: 180 }} />
+                    <Select options={TASK_TYPE_OPTIONS} placeholder="Type" style={{ width: isMobile ? "100%" : 180 }} />
                   </Form.Item>
                   <Form.Item {...rest} name={[name, "hours"]} rules={[{ required: true }]}>
-                    <InputNumber min={0} step={0.5} placeholder="Hours" style={{ width: 120 }} />
+                    <InputNumber min={0} step={0.5} placeholder="Hours" style={{ width: isMobile ? "100%" : 120 }} />
                   </Form.Item>
                   <MinusCircleOutlined onClick={() => remove(name)} />
                 </Space>
@@ -337,9 +340,9 @@ export function ReportFormPage() {
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name, ...rest }) => (
-                <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
+                <Space key={key} wrap align="baseline" style={{ display: "flex", marginBottom: 8, width: "100%" }}>
                   <Form.Item {...rest} name={[name, "type"]} rules={[{ required: true }]}>
-                    <Select options={NOTE_LINK_TYPE_OPTIONS} style={{ width: 120 }} />
+                    <Select options={NOTE_LINK_TYPE_OPTIONS} style={{ width: isMobile ? "100%" : 120 }} />
                   </Form.Item>
                   <Form.Item {...rest} name={[name, "content"]} rules={[{ required: true }]}>
                     <TextArea
@@ -347,7 +350,7 @@ export function ReportFormPage() {
                       showCount
                       autoSize={{ minRows: 1, maxRows: 1 }}
                       placeholder="Content or URL"
-                      style={{ width: 360 }}
+                      style={{ width: isMobile ? "100%" : 360 }}
                     />
                   </Form.Item>
                   <MinusCircleOutlined onClick={() => remove(name)} />
@@ -361,7 +364,7 @@ export function ReportFormPage() {
         </Form.List>
 
         <Divider />
-        <Space>
+        <Space wrap>
           <Button type="primary" htmlType="submit" loading={isSaving}>
             {isEdit ? "Save changes" : "Save draft"}
           </Button>

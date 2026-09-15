@@ -10,7 +10,7 @@ export function makeFilterDropdown(
   onReset: () => void
 ) {
   return ({ close }: { close: () => void }) => (
-    <div style={{ padding: 12, width: 260 }} onKeyDown={(e) => e.stopPropagation()}>
+    <div style={{ padding: 12, width: "min(260px, calc(100vw - 32px))" }} onKeyDown={(e) => e.stopPropagation()}>
       {content(close)}
       <Space style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
         <Button

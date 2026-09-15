@@ -14,7 +14,7 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen bg-paper px-4 py-10">
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center justify-between border border-hairline bg-white p-6">
+        <div className="flex flex-col gap-4 border border-hairline bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="text-sm text-muted">Logged in as</p>
             <p className="font-display text-lg font-semibold text-ink">{user?.name}</p>
@@ -25,7 +25,7 @@ export function DashboardPage() {
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/30 disabled:opacity-60"
+            className="w-full border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/30 disabled:opacity-60 sm:w-auto"
           >
             {isLoggingOut ? "Logging out..." : "Log out"}
           </button>

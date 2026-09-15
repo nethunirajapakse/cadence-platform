@@ -192,6 +192,7 @@ export function AllReportsPage() {
         columns={columns}
         dataSource={reports}
         loading={isDashboardFetching}
+        scroll={{ x: "max-content" }}
         pagination={{
           current: page + 1,
           pageSize: size,

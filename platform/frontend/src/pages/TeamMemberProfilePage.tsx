@@ -172,17 +172,17 @@ export function TeamMemberProfilePage() {
       </Card>
 
       <Row gutter={16}>
-        <Col span={5}>
+        <Col xs={24} sm={12} lg={5}>
           <Card loading={isMemberStatsFetching}>
             <Statistic title="Total reports" value={memberStats?.totalReports ?? 0} />
           </Card>
         </Col>
-        <Col span={5}>
+        <Col xs={24} sm={12} lg={5}>
           <Card loading={isMemberStatsFetching}>
             <Statistic title="Approved" value={memberStats?.approvedCount ?? 0} valueStyle={{ color: "#2F6F63" }} />
           </Card>
         </Col>
-        <Col span={5}>
+        <Col xs={24} sm={12} lg={5}>
           <Card loading={isMemberStatsFetching}>
             <Statistic
               title="Needs correction"
@@ -191,12 +191,12 @@ export function TeamMemberProfilePage() {
             />
           </Card>
         </Col>
-        <Col span={5}>
+        <Col xs={24} sm={12} lg={5}>
           <Card loading={isMemberStatsFetching}>
             <Statistic title="Tasks completed" value={memberStats?.tasksCompletedCount ?? 0} />
           </Card>
         </Col>
-        <Col span={4}>
+        <Col xs={24} sm={12} lg={4}>
           <Card loading={isMemberStatsFetching}>
             <Statistic
               title="Open blockers"
@@ -213,6 +213,7 @@ export function TeamMemberProfilePage() {
           columns={columns}
           dataSource={reports}
           loading={isDashboardFetching}
+          scroll={{ x: "max-content" }}
           pagination={{
             current: page + 1,
             pageSize: size,
