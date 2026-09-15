@@ -136,7 +136,7 @@ export function ReportFormPage() {
           <TextArea rows={2} maxLength={2000} showCount placeholder="Optional notes for this week" />
         </Form.Item>
 
-        <Divider orientation="left">Tasks completed</Divider>
+        <Divider>Tasks completed</Divider>
         <Form.List name="tasks">
           {(fields, { add, remove }) => (
             <>
@@ -186,7 +186,7 @@ export function ReportFormPage() {
           )}
         </Form.List>
 
-        <Divider orientation="left">Tasks planned for next week</Divider>
+        <Divider>Tasks planned for next week</Divider>
         <Form.List name="nextWeekTasks">
           {(fields, { add, remove }) => (
             <>
@@ -214,7 +214,7 @@ export function ReportFormPage() {
           )}
         </Form.List>
 
-        <Divider orientation="left">Blockers / challenges</Divider>
+        <Divider>Blockers / challenges</Divider>
         <Form.Item shouldUpdate noStyle>
           {() => (
             <Form.List name="blockers">
@@ -262,7 +262,7 @@ export function ReportFormPage() {
           )}
         </Form.Item>
 
-        <Divider orientation="left">Achievements / highlights</Divider>
+        <Divider>Achievements / highlights</Divider>
         <Form.Item shouldUpdate noStyle>
           {() => (
             <Form.List name="achievements">
@@ -310,7 +310,7 @@ export function ReportFormPage() {
           )}
         </Form.Item>
 
-        <Divider orientation="left">Hours by task type (optional)</Divider>
+        <Divider>Hours by task type (optional)</Divider>
         <Form.List name="timeLogs">
           {(fields, { add, remove }) => (
             <>
@@ -332,7 +332,7 @@ export function ReportFormPage() {
           )}
         </Form.List>
 
-        <Divider orientation="left">Notes &amp; links</Divider>
+        <Divider>Notes &amp; links</Divider>
         <Form.List name="noteLinks">
           {(fields, { add, remove }) => (
             <>
