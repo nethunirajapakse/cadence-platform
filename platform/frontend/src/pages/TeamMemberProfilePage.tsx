@@ -1,19 +1,29 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Table, Select, DatePicker, Button, Space, Switch, Typography } from "antd";
+import { useParams, Link } from "react-router-dom";
+import { Card, Col, Row, Statistic, Typography, Table, Space, Tag, Select, DatePicker, Button, Switch } from "antd";
 import { FilterFilled, ClearOutlined } from "@ant-design/icons";
 import type { ColumnType } from "antd/es/table";
 import type { Dayjs } from "dayjs";
+import { useUserProfile } from "@/hooks/useUsers";
+import { useMemberStats } from "@/hooks/useDashboard";
+import { useDashboardReports } from "@/hooks/useReports";
 import { useProjects } from "@/hooks/useProjects";
-import { useMyReports } from "@/hooks/useReports";
 import { StatusTag } from "@/components/StatusTag";
 import { makeFilterDropdown } from "@/components/ColumnFilterDropdown";
-import { REPORT_STATUS_OPTIONS } from "@/constants/reportOptions";
+import { MANAGER_VISIBLE_STATUS_OPTIONS } from "@/constants/reportOptions";
 import type { ReportStatus, ReportSummary } from "@/types/report";
 
 const { RangePicker } = DatePicker;
 
-export function ReportHistoryPage() {
+// Manager-only view: clicking a team member's name elsewhere in the app
+// lands here - their basic info, a few summary stats, and their full report
+// history, filterable the same way as the other report tables in the app.
+export function TeamMemberProfilePage() {
+  const { userId } = useParams<{ userId: string }>();
+  const { profile, isProfileFetching } = useUserProfile(userId);
+  const { memberStats, isMemberStatsFetching } = useMemberStats(userId);
+  const { projects } = useProjects();
+
   const [page, setPage] = useState(0);
   const [statuses, setStatuses] = useState<ReportStatus[]>([]);
   const [projectIds, setProjectIds] = useState<string[]>([]);
@@ -21,9 +31,9 @@ export function ReportHistoryPage() {
   const [weekRange, setWeekRange] = useState<[Dayjs, Dayjs] | null>(null);
   const size = 10;
 
-  const { projects } = useProjects();
-  const { reports, totalElements, isReportsFetching } = useMyReports(
+  const { reports, totalElements, isDashboardFetching } = useDashboardReports(
     {
+      userId, // fixed to this profile - not one of the user-editable filters
       statuses: statuses.length ? statuses : undefined,
       projectIds: projectIds.length ? projectIds : undefined,
       excludeProjects,
@@ -33,10 +43,8 @@ export function ReportHistoryPage() {
     page,
     size
   );
-  const navigate = useNavigate();
 
   const activeFilterColor = (active: boolean) => (active ? "#2F6F63" : undefined);
-
   const hasActiveFilters = projectIds.length > 0 || excludeProjects || statuses.length > 0 || !!weekRange;
 
   function resetAllFilters() {
@@ -117,9 +125,8 @@ export function ReportHistoryPage() {
       filterIcon: () => <FilterFilled style={{ color: activeFilterColor(statuses.length > 0) }} />,
       filterDropdown: makeFilterDropdown(
         () => (
-          // Includes DRAFT deliberately - this is the team member's own
-          // history, unlike the manager's views, so their own drafts must be
-          // filterable here too.
+          // MANAGER_VISIBLE_STATUS_OPTIONS (no DRAFT) - this is a manager's
+          // view of someone else's reports, same draft-hiding rule as everywhere else.
           <Select
             mode="multiple"
             showSearch={false}
@@ -127,7 +134,7 @@ export function ReportHistoryPage() {
             placeholder="Select statuses..."
             style={{ width: "100%" }}
             value={statuses}
-            options={REPORT_STATUS_OPTIONS}
+            options={MANAGER_VISIBLE_STATUS_OPTIONS}
             onChange={(v) => {
               setStatuses(v);
               setPage(0);
@@ -149,27 +156,71 @@ export function ReportHistoryPage() {
   ];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          My reports
-        </Typography.Title>
-        <Button type="primary" onClick={() => navigate("/reports/new")}>
-          New report
-        </Button>
-      </Space>
-      <Table
-        rowKey="reportId"
-        columns={columns}
-        dataSource={reports}
-        loading={isReportsFetching}
-        pagination={{
-          current: page + 1,
-          pageSize: size,
-          total: totalElements,
-          onChange: (p) => setPage(p - 1),
-        }}
-      />
-    </div>
+    <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      <Card loading={isProfileFetching}>
+        <Space direction="vertical" size={0}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            {profile?.name}
+          </Typography.Title>
+          <Typography.Text type="secondary">{profile?.email}</Typography.Text>
+          {profile?.role && (
+            <Tag style={{ marginTop: 8 }} color={profile.role === "MANAGER" ? "purple" : "blue"}>
+              {profile.role === "MANAGER" ? "Manager" : "Team member"}
+            </Tag>
+          )}
+        </Space>
+      </Card>
+
+      <Row gutter={16}>
+        <Col span={5}>
+          <Card loading={isMemberStatsFetching}>
+            <Statistic title="Total reports" value={memberStats?.totalReports ?? 0} />
+          </Card>
+        </Col>
+        <Col span={5}>
+          <Card loading={isMemberStatsFetching}>
+            <Statistic title="Approved" value={memberStats?.approvedCount ?? 0} valueStyle={{ color: "#2F6F63" }} />
+          </Card>
+        </Col>
+        <Col span={5}>
+          <Card loading={isMemberStatsFetching}>
+            <Statistic
+              title="Needs correction"
+              value={memberStats?.needsCorrectionCount ?? 0}
+              valueStyle={{ color: "#B8802E" }}
+            />
+          </Card>
+        </Col>
+        <Col span={5}>
+          <Card loading={isMemberStatsFetching}>
+            <Statistic title="Tasks completed" value={memberStats?.tasksCompletedCount ?? 0} />
+          </Card>
+        </Col>
+        <Col span={4}>
+          <Card loading={isMemberStatsFetching}>
+            <Statistic
+              title="Open blockers"
+              value={memberStats?.openBlockersCount ?? 0}
+              valueStyle={{ color: "#B8802E" }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card title="Report history">
+        <Table
+          rowKey="reportId"
+          columns={columns}
+          dataSource={reports}
+          loading={isDashboardFetching}
+          pagination={{
+            current: page + 1,
+            pageSize: size,
+            total: totalElements,
+            onChange: (p) => setPage(p - 1),
+          }}
+        />
+      </Card>
+    </Space>
   );
 }

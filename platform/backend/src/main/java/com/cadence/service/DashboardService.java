@@ -11,6 +11,9 @@ import com.cadence.entity.enums.RoleName;
 import com.cadence.entity.enums.TaskStatus;
 import com.cadence.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-// All aggregation here happens in Java over a handful of JOIN-FETCHed queries,
-// not via SQL GROUP BY. Deliberate choice at this data scale (tens of team
-// members, low hundreds of reports/tasks): it's far more readable than
-// hand-rolled aggregate JPQL/QueryDSL, and it avoids adding more surface
-// area to the QueryDSL setup that's already been fragile on this project. A
-// system with real growth would eventually want these pushed into the
-// database, but that's not where this assignment's data volume lives.
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -84,9 +80,6 @@ public class DashboardService {
                 (int) openBlockersCount);
     }
 
-    // Team-wide count of DONE tasks per week, across the weeks that actually
-    // have data - naturally limited to however many weeks of history exist
-    // (the seeded data covers about 4).
     public List<TasksTrendPoint> getTasksCompletedTrend() {
         List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
 
@@ -100,9 +93,6 @@ public class DashboardService {
                 .toList();
     }
 
-    // Deliberately excludes DRAFT - a manager can't see drafts, so a
-    // per-member breakdown of "submission/approval status" only makes sense
-    // over the statuses they can actually observe.
     public List<MemberStatusBreakdown> getStatusByMember() {
         List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT);
 
@@ -123,8 +113,6 @@ public class DashboardService {
                 .toList();
     }
 
-    // Task count per project, standing in for "workload" - a project with
-    // more logged tasks across the team has more people actively working on it.
     public List<ProjectWorkload> getWorkloadByProject() {
         List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
 
@@ -151,9 +139,6 @@ public class DashboardService {
                 .toList();
     }
 
-    // Most recent submit/approve/correction actions, newest first - the one
-    // place recency actually matters, since submittedAt/approvedAt were
-    // deliberately backdated by the seeder to spread across real weeks.
     public List<ActivityItem> getRecentActivity(int limit) {
         List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT);
 
@@ -163,6 +148,74 @@ public class DashboardService {
                 .sorted(Comparator.comparing(ActivityItem::getActionAt).reversed())
                 .limit(limit)
                 .toList();
+    }
+
+    // Backs the team-member profile page's stat cards - the same shape of
+    // metric as the team-wide summary, but scoped down to one person. DRAFT
+    // reports are excluded here too, for the same reason a manager can't see
+    // them anywhere else: they're not "this person's activity" from a
+    // manager's point of view until submitted.
+    public MemberStatsResponse getMemberStats(UUID userId) {
+        List<WeeklyReport> allReports = weeklyReportRepository
+                .findByUser_UserId(userId, Pageable.unpaged())
+                .getContent();
+
+        List<WeeklyReport> visible = allReports.stream()
+                .filter(r -> r.getStatus() != ReportStatus.DRAFT)
+                .toList();
+
+        int approved = (int) visible.stream().filter(r -> r.getStatus() == ReportStatus.APPROVED).count();
+        int needsCorrection = (int) visible.stream().filter(r -> r.getStatus() == ReportStatus.NEEDS_CORRECTION).count();
+
+        int tasksCompleted = (int) visible.stream()
+                .flatMap(r -> r.getTasks().stream())
+                .filter(t -> t.getStatus() == TaskStatus.DONE)
+                .count();
+
+        int openBlockers = (int) visible.stream()
+                .filter(r -> r.getStatus() == ReportStatus.SUBMITTED || r.getStatus() == ReportStatus.NEEDS_CORRECTION)
+                .flatMap(r -> r.getBlockers().stream())
+                .count();
+
+        return new MemberStatsResponse(visible.size(), approved, needsCorrection, tasksCompleted, openBlockers);
+    }
+
+    // Backs the paginated "Team members" list page. Filters and pages the
+    // USERS first at the database layer (via QueryDSL, same reasoning as the
+    // Projects search - dynamic predicates instead of a null-guarded JPQL
+    // string), then computes report stats only for whichever page of users
+    // came back - not the whole team on every request.
+    public Page<TeamMemberOverview> getTeamMemberOverview(TeamMemberFilterCriteria criteria, Pageable pageable) {
+        Page<User> userPage = userRepository.findTeamMembersByFilters(criteria, pageable);
+
+        List<UUID> userIds = userPage.getContent().stream().map(User::getUserId).toList();
+        List<WeeklyReport> reports = userIds.isEmpty()
+                ? List.of()
+                : weeklyReportRepository.findByUser_UserIdInAndStatusNot(userIds, ReportStatus.DRAFT);
+
+        Map<UUID, List<WeeklyReport>> reportsByUserId = reports.stream()
+                .collect(Collectors.groupingBy(r -> r.getUser().getUserId()));
+
+        List<TeamMemberOverview> overview = userPage.getContent().stream()
+                .map(member -> {
+                    List<WeeklyReport> memberReports = reportsByUserId.getOrDefault(member.getUserId(), List.of());
+                    int approved = (int) memberReports.stream().filter(r -> r.getStatus() == ReportStatus.APPROVED).count();
+                    int needsCorrection = (int) memberReports.stream()
+                            .filter(r -> r.getStatus() == ReportStatus.NEEDS_CORRECTION)
+                            .count();
+
+                    return new TeamMemberOverview(
+                            member.getUserId(),
+                            member.getName(),
+                            member.getEmail(),
+                            member.getRole().getRoleName().name(),
+                            memberReports.size(),
+                            approved,
+                            needsCorrection);
+                })
+                .toList();
+
+        return new PageImpl<>(overview, pageable, userPage.getTotalElements());
     }
 
     private ActivityItem toActivityItem(WeeklyReport report) {

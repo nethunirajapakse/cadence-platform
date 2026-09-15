@@ -13,14 +13,14 @@ import {
 } from "@/api/reports";
 import type { ReportRequest, ReviewRequest } from "@/types/report";
 
-export const useMyReports = (page = 0, size = 10) => {
+export const useMyReports = (filters: DashboardFilters = {}, page = 0, size = 10) => {
   const {
     data,
     isFetching: isReportsFetching,
     error: reportsError,
   } = useQuery({
-    queryKey: ["myReports", page, size],
-    queryFn: () => getMyReports(page, size),
+    queryKey: ["myReports", filters, page, size],
+    queryFn: () => getMyReports(filters, page, size),
   });
 
   return {

@@ -16,15 +16,15 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, UUID
 
     Page<WeeklyReport> findByUser_UserId(UUID userId, Pageable pageable);
 
-    // Every report for a given week, any user, any status - the dashboard
-    // summary filters DRAFT out itself since it needs to reason about "no
-    // report yet" vs "drafted but not submitted" separately.
     List<WeeklyReport> findByWeekStartDate(LocalDate weekStartDate);
 
     long countByStatus(ReportStatus status);
 
-    // Backs several dashboard charts (status-by-member, recent activity) -
-    // JOIN FETCH avoids an N+1 query per report when reading user/project names.
+    // Scoped to a specific set of users - backs the paginated "Team members"
+    // overview, so stats are only computed for whichever page of users came
+    // back, not the whole team every time.
+    List<WeeklyReport> findByUser_UserIdInAndStatusNot(List<UUID> userIds, ReportStatus status);
+
     @Query("SELECT r FROM WeeklyReport r JOIN FETCH r.user JOIN FETCH r.project WHERE r.status <> :excludedStatus")
     List<WeeklyReport> findAllExcludingStatus(@Param("excludedStatus") ReportStatus excludedStatus);
 }

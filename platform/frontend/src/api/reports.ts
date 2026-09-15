@@ -38,19 +38,21 @@ export const getReportVersions = async (reportId: string): Promise<ReportVersion
 };
 
 export const getMyReports = async (
+  filters: DashboardFilters = {},
   page = 0,
   size = 10
 ): Promise<PageResponse<ReportSummary>> => {
   const response = await api.get("/api/reports/mine", {
-    params: { page, size, sort: "weekStartDate,desc" },
+    params: { ...filters, page, size, sort: "weekStartDate,desc" },
   });
   return response.data;
 };
 
 export interface DashboardFilters {
   userId?: string;
-  projectId?: string;
-  status?: ReportStatus;
+  projectIds?: string[];
+  excludeProjects?: boolean;
+  statuses?: ReportStatus[];
   weekStart?: string;
   weekEnd?: string;
 }
@@ -74,6 +76,9 @@ export const reviewReport = async (
   return response.data;
 };
 
+// Typo-fix path: rewrites the wording of an existing manager comment without
+// changing the report's status. Backend only allows this while the report is
+// still NEEDS_CORRECTION.
 export const editReportComment = async (reportId: string, comment: string): Promise<ReportResponse> => {
   const response = await api.patch(`/api/reports/${reportId}/comment`, { comment });
   return response.data;

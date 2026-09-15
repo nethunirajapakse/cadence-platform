@@ -53,9 +53,31 @@ export function AllReportsPage() {
   }
 
   const columns: ColumnType<ReportSummary>[] = [
+     {
+      title: "Week",
+      key: "week",
+      render: (_: unknown, r: ReportSummary) => `${r.weekStartDate} – ${r.weekEndDate}`,
+      filterIcon: () => <FilterFilled style={{ color: activeFilterColor(!!weekRange) }} />,
+      filterDropdown: makeFilterDropdown(
+        () => (
+          <RangePicker
+            style={{ width: "100%" }}
+            value={weekRange}
+            onChange={(v) => {
+              setWeekRange(v as [Dayjs, Dayjs] | null);
+              setPage(0);
+            }}
+          />
+        ),
+        () => setWeekRange(null)
+      ),
+    },
     {
       title: "Team member",
       dataIndex: "userName",
+      render: (_: unknown, r: ReportSummary) => (
+        <Link to={`/team-members/${r.userId}`}>{r.userName}</Link>
+      ),
       filterIcon: () => <SearchOutlined style={{ color: activeFilterColor(!!userId) }} />,
       filterDropdown: makeFilterDropdown(
         () => (
@@ -117,25 +139,6 @@ export function AllReportsPage() {
           setProjectIds([]);
           setExcludeProjects(false);
         }
-      ),
-    },
-    {
-      title: "Week",
-      key: "week",
-      render: (_: unknown, r: ReportSummary) => `${r.weekStartDate} – ${r.weekEndDate}`,
-      filterIcon: () => <FilterFilled style={{ color: activeFilterColor(!!weekRange) }} />,
-      filterDropdown: makeFilterDropdown(
-        () => (
-          <RangePicker
-            style={{ width: "100%" }}
-            value={weekRange}
-            onChange={(v) => {
-              setWeekRange(v as [Dayjs, Dayjs] | null);
-              setPage(0);
-            }}
-          />
-        ),
-        () => setWeekRange(null)
       ),
     },
     {

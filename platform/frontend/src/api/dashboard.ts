@@ -6,7 +6,11 @@ import type {
   ProjectWorkload,
   TaskTypeHours,
   ActivityItem,
+  MemberStats,
+  TeamMemberOverview,
+  TeamMemberFilterCriteria,
 } from "@/types/dashboard";
+import type { PageResponse } from "@/types/page";
 
 export const getDashboardSummary = async (): Promise<DashboardSummary> => {
   const response = await api.get("/api/dashboard/summary");
@@ -35,5 +39,21 @@ export const getTimeByTaskType = async (): Promise<TaskTypeHours[]> => {
 
 export const getRecentActivity = async (limit = 15): Promise<ActivityItem[]> => {
   const response = await api.get("/api/dashboard/recent-activity", { params: { limit } });
+  return response.data;
+};
+
+export const getMemberStats = async (userId: string): Promise<MemberStats> => {
+  const response = await api.get(`/api/dashboard/member-stats/${userId}`);
+  return response.data;
+};
+
+export const getTeamMemberOverview = async (
+  filters: TeamMemberFilterCriteria = {},
+  page = 0,
+  size = 10
+): Promise<PageResponse<TeamMemberOverview>> => {
+  const response = await api.get("/api/dashboard/team-overview", {
+    params: { ...filters, page, size, sort: "name" },
+  });
   return response.data;
 };

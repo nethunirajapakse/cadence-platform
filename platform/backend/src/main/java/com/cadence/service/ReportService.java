@@ -174,8 +174,8 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReportSummaryResponse> getOwnHistory(UUID userId, Pageable pageable) {
-        return weeklyReportRepository.findByUser_UserId(userId, pageable)
+    public Page<ReportSummaryResponse> getOwnHistory(UUID userId, ReportFilterCriteria criteria, Pageable pageable) {
+        return weeklyReportRepository.findForOwnHistory(userId, criteria, pageable)
                 .map(ReportSummaryResponse::new);
     }
 

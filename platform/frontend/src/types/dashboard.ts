@@ -42,3 +42,26 @@ export interface ActivityItem {
   actionAt: string;
   description: string;
 }
+
+export interface MemberStats {
+  totalReports: number;
+  approvedCount: number;
+  needsCorrectionCount: number;
+  tasksCompletedCount: number;
+  openBlockersCount: number;
+}
+
+export interface TeamMemberOverview {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  totalReports: number;
+  approvedCount: number;
+  needsCorrectionCount: number;
+}
+
+export interface TeamMemberFilterCriteria {
+  name?: string;
+  email?: string;
+}

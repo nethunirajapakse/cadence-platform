@@ -6,7 +6,10 @@ import {
   getWorkloadByProject,
   getTimeByTaskType,
   getRecentActivity,
+  getMemberStats,
+  getTeamMemberOverview,
 } from "@/api/dashboard";
+import type { TeamMemberFilterCriteria } from "@/types/dashboard";
 
 export const useDashboardSummary = () => {
   const { data, isFetching, error } = useQuery({
@@ -54,4 +57,25 @@ export const useRecentActivity = (limit = 15) => {
     queryFn: () => getRecentActivity(limit),
   });
   return { activity: data ?? [], isActivityFetching: isFetching };
+};
+
+export const useMemberStats = (userId?: string) => {
+  const { data, isFetching } = useQuery({
+    queryKey: ["memberStats", userId],
+    queryFn: () => getMemberStats(userId as string),
+    enabled: !!userId,
+  });
+  return { memberStats: data, isMemberStatsFetching: isFetching };
+};
+
+export const useTeamMemberOverview = (filters: TeamMemberFilterCriteria = {}, page = 0, size = 10) => {
+  const { data, isFetching } = useQuery({
+    queryKey: ["teamMemberOverview", filters, page, size],
+    queryFn: () => getTeamMemberOverview(filters, page, size),
+  });
+  return {
+    teamMemberOverview: data?.content ?? [],
+    totalElements: data?.totalElements ?? 0,
+    isTeamMemberOverviewFetching: isFetching,
+  };
 };

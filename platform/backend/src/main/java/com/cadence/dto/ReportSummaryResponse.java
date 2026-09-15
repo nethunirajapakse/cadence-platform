@@ -7,11 +7,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// Lighter shape for list views (own history, manager dashboard) - no child
-// collections, so listing 50 reports doesn't drag along their full task tables.
 @Getter
 public class ReportSummaryResponse {
     private final UUID reportId;
+    private final UUID userId;
     private final String userName;
     private final String projectName;
     private final LocalDate weekStartDate;
@@ -21,6 +20,7 @@ public class ReportSummaryResponse {
 
     public ReportSummaryResponse(WeeklyReport report) {
         this.reportId = report.getReportId();
+        this.userId = report.getUser().getUserId();
         this.userName = report.getUser().getName();
         this.projectName = report.getProject().getName();
         this.weekStartDate = report.getWeekStartDate();

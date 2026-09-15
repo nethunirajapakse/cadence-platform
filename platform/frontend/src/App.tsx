@@ -9,6 +9,8 @@ import { ReportFormPage } from "@/pages/ReportFormPage";
 import { ReportDetailPage } from "@/pages/ReportDetailPage";
 import { TeamDashboardPage } from "@/pages/TeamDashboardPage";
 import { AllReportsPage } from "@/pages/AllReportsPage";
+import { TeamMembersPage } from "@/pages/TeamMembersPage";
+import { TeamMemberProfilePage } from "@/pages/TeamMemberProfilePage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
 
 // Landing page differs by role - a team member's home is their own report
@@ -51,6 +53,22 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["MANAGER"]}>
                   <AllReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/team-members"
+              element={
+                <ProtectedRoute allowedRoles={["MANAGER"]}>
+                  <TeamMembersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/team-members/:userId"
+              element={
+                <ProtectedRoute allowedRoles={["MANAGER"]}>
+                  <TeamMemberProfilePage />
                 </ProtectedRoute>
               }
             />

@@ -85,6 +85,7 @@ export interface ReportResponse {
 // Lighter shape used in list views (own history, manager dashboard).
 export interface ReportSummary {
   reportId: string;
+  userId: string;
   userName: string;
   projectName: string;
   weekStartDate: string;

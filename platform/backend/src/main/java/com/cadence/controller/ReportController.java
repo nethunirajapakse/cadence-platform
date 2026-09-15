@@ -47,11 +47,14 @@ public class ReportController {
 
     // ---- team member: own history -------------------------------------------
 
+    // criteria is populated by Spring MVC's implicit @ModelAttribute binding,
+    // same as the manager dashboard endpoint below - the difference is entirely
+    // in the service/repository layer (own drafts are included here).
     @GetMapping("/mine")
     @PreAuthorize("hasRole('TEAM_MEMBER')")
     public Page<ReportSummaryResponse> myHistory(
-            @AuthenticationPrincipal UserPrincipal principal, Pageable pageable) {
-        return reportService.getOwnHistory(principal.getUserId(), pageable);
+            @AuthenticationPrincipal UserPrincipal principal, ReportFilterCriteria criteria, Pageable pageable) {
+        return reportService.getOwnHistory(principal.getUserId(), criteria, pageable);
     }
 
     // ---- shared: detail + version history (owner, or manager on non-draft) --
@@ -70,9 +73,6 @@ public class ReportController {
 
     // ---- manager: dashboard + review -----------------------------------------
 
-    // criteria is populated by Spring MVC's implicit @ModelAttribute binding -
-    // its fields (userId, projectIds, excludeProjects, statuses, weekStart,
-    // weekEnd) map directly onto matching query parameter names.
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
     public Page<ReportSummaryResponse> dashboard(ReportFilterCriteria criteria, Pageable pageable) {
