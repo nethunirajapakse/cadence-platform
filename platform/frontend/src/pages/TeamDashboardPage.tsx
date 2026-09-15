@@ -11,7 +11,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -38,7 +37,6 @@ export function TeamDashboardPage() {
   const isMobile = !screens.md;
   const { summary, isSummaryFetching } = useDashboardSummary();
   const { tasksTrend } = useTasksTrend();
-  const { statusByMember } = useStatusByMember();
   const { workloadByProject } = useWorkloadByProject();
   const { timeByTaskType } = useTimeByTaskType();
   const { activity } = useRecentActivity(10);
