@@ -1,6 +1,7 @@
 package com.cadence.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +34,9 @@ public class SecurityConfig {
     private final CsrfCookieFilter csrfCookieFilter;
     private final CustomUserDetailsService userDetailsService;
 
+    @Value("${app.jwt.cookie-secure:false}")
+    private boolean cookieSecure;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -53,17 +57,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF is back on, because the auth token now travels in a cookie the
-                // browser attaches automatically to every request - including ones a
-                // malicious site could trigger. CookieCsrfTokenRepository is the standard
-                // double-submit pattern: server sets a *non*-httpOnly XSRF-TOKEN cookie,
-                // frontend reads it and echoes it back as a header, server checks they match.
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRepository(csrfTokenRepository())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        // Register/login/logout are the entry points - a client has no CSRF
-                        // cookie to submit yet on register/login, and logout is low-risk
-                        // (worst case, an attacker force-logs someone out).
                         .ignoringRequestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout")
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -87,6 +83,17 @@ public class SecurityConfig {
                 .addFilterAfter(csrfCookieFilter, BasicAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private CookieCsrfTokenRepository csrfTokenRepository() {
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        // Same reasoning as CookieUtil: SameSite must match the deployment's
+        // Secure setting, since None requires Secure=true.
+        repository.setCookieCustomizer(cookie -> cookie
+                .secure(cookieSecure)
+                .sameSite(cookieSecure ? "None" : "Lax")
+        );
+        return repository;
     }
 
     @Bean

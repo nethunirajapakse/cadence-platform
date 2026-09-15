@@ -13,21 +13,29 @@ public class CookieUtil {
 
     private final boolean secure;
     private final long maxAgeMs;
+    // SameSite=None is required once frontend and backend are on different
+    // registrable domains (Vercel + Render) - browsers never attach a Lax or
+    // Strict cookie to a cross-site fetch/XHR, only to top-level navigations,
+    // so every API call after login would look anonymous without this.
+    // None requires Secure=true or browsers reject the cookie outright, which
+    // is exactly why this is tied to the same flag rather than a separate one:
+    // the two attributes are only ever valid together in this app's two
+    // environments (local http -> Lax, deployed https -> None).
+    private final String sameSite;
 
     public CookieUtil(
-            // false for local http dev - set app.jwt.cookie-secure=true once deployed behind HTTPS,
-            // otherwise browsers silently refuse to store/send the cookie at all.
             @Value("${app.jwt.cookie-secure:false}") boolean secure,
             @Value("${app.jwt.expiration-ms}") long maxAgeMs) {
         this.secure = secure;
         this.maxAgeMs = maxAgeMs;
+        this.sameSite = secure ? "None" : "Lax";
     }
 
     public ResponseCookie buildAuthCookie(String token) {
         return ResponseCookie.from(COOKIE_NAME, token)
-                .httpOnly(true)   // the entire point - JS cannot read this, so it can't be stolen via XSS
+                .httpOnly(true)
                 .secure(secure)
-                .sameSite("Lax")  // survives normal navigation/links; blocks it being sent on cross-site POSTs
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(Duration.ofMillis(maxAgeMs))
                 .build();
@@ -37,7 +45,7 @@ public class CookieUtil {
         return ResponseCookie.from(COOKIE_NAME, "")
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Lax")
+                .sameSite(sameSite)
                 .path("/")
                 .maxAge(0)
                 .build();
