@@ -70,7 +70,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    credentials: "include", // send/receive the httpOnly auth cookie + the CSRF cookie
+    credentials: "include",
     headers,
   });
 
