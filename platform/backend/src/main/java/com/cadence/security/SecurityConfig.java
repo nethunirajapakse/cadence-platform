@@ -1,7 +1,6 @@
 package com.cadence.security;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,7 +16,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -52,25 +50,8 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // Same SameSite/Secure reasoning as CookieUtil - Spring's default
-    // CookieCsrfTokenRepository hardcodes no SameSite customization, which
-    // means it inherits the servlet container's default (Lax). That breaks
-    // the XSRF-TOKEN cookie the same way the auth cookie broke: it stops
-    // arriving on cross-site fetch/XHR requests once frontend and backend
-    // are on different domains.
     @Bean
-    public CsrfTokenRepository csrfTokenRepository(
-            @Value("${app.jwt.cookie-secure:false}") boolean secure,
-            @Value("${app.jwt.cookie-samesite:Lax}") String sameSite) {
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieCustomizer(cookie -> cookie.secure(secure).sameSite(sameSite));
-        return repository;
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            CsrfTokenRepository csrfTokenRepository) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // CSRF is back on, because the auth token now travels in a cookie the
                 // browser attaches automatically to every request - including ones a
@@ -78,7 +59,7 @@ public class SecurityConfig {
                 // double-submit pattern: server sets a *non*-httpOnly XSRF-TOKEN cookie,
                 // frontend reads it and echoes it back as a header, server checks they match.
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository)
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                         // Register/login/logout are the entry points - a client has no CSRF
                         // cookie to submit yet on register/login, and logout is low-risk
@@ -98,7 +79,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll()
                 )
@@ -112,7 +92,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cadence-alpha-kohl.vercel.app"));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cadence-alpha-kohl.vercel.app/"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         // Required for cookies to travel cross-origin at all - must be true, and
