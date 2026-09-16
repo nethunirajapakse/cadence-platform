@@ -2,7 +2,7 @@ package com.cadence.service;
 
 import com.cadence.entity.WeeklyReport;
 import com.cadence.entity.enums.ReportStatus;
-import com.cadence.repository.WeeklyReportRepository;
+import com.cadence.repository.report.WeeklyReportRepository;
 import com.cadence.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;

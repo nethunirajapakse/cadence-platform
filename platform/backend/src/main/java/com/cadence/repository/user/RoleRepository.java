@@ -1,4 +1,4 @@
-package com.cadence.repository;
+package com.cadence.repository.user;
 
 import com.cadence.entity.Role;
 import com.cadence.entity.enums.RoleName;

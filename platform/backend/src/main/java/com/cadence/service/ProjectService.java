@@ -4,7 +4,7 @@ import com.cadence.dto.project.ProjectFilterCriteria;
 import com.cadence.dto.project.ProjectRequestDTO;
 import com.cadence.dto.project.ProjectResponseDTO;
 import com.cadence.entity.Project;
-import com.cadence.repository.ProjectRepository;
+import com.cadence.repository.project.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

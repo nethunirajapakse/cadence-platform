@@ -1,4 +1,4 @@
-package com.cadence.repository;
+package com.cadence.repository.project;
 
 import com.cadence.dto.project.ProjectFilterCriteria;
 import com.cadence.entity.Project;

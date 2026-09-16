@@ -1,4 +1,4 @@
-package com.cadence.repository;
+package com.cadence.repository.project;
 
 import com.cadence.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;

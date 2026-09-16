@@ -4,7 +4,7 @@ import com.cadence.dto.user.TeamMemberSummaryDTO;
 import com.cadence.dto.user.UserProfileResponseDTO;
 import com.cadence.entity.User;
 import com.cadence.entity.enums.RoleName;
-import com.cadence.repository.UserRepository;
+import com.cadence.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;

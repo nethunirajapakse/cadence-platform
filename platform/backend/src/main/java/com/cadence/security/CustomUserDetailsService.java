@@ -1,6 +1,6 @@
 package com.cadence.security;
 
-import com.cadence.repository.UserRepository;
+import com.cadence.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

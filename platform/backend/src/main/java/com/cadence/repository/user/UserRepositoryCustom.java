@@ -1,4 +1,4 @@
-package com.cadence.repository;
+package com.cadence.repository.user;
 
 import com.cadence.dto.user.TeamMemberFilterCriteriaDTO;
 import com.cadence.entity.User;

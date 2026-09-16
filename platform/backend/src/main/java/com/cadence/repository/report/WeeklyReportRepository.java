@@ -1,4 +1,4 @@
-package com.cadence.repository;
+package com.cadence.repository.report;
 
 import com.cadence.entity.WeeklyReport;
 import com.cadence.entity.enums.ReportStatus;

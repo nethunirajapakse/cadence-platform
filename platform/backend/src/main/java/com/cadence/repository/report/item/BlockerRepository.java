@@ -1,4 +1,4 @@
-package com.cadence.repository;
+package com.cadence.repository.report.item;
 
 import com.cadence.entity.Blocker;
 import com.cadence.entity.enums.ReportStatus;
