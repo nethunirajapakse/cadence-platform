@@ -1,7 +1,7 @@
 package com.cadence.service;
 
 import com.cadence.dto.dashboard.*;
-import com.cadence.dto.user.TeamMemberFilterCriteriaDTO;
+import com.cadence.dto.user.TeamMemberFilterCriteria;
 import com.cadence.entity.ReportTask;
 import com.cadence.entity.TimeLog;
 import com.cadence.entity.User;
@@ -189,7 +189,7 @@ public class DashboardService {
     // Projects search - dynamic predicates instead of a null-guarded JPQL
     // string), then computes report stats only for whichever page of users
     // came back - not the whole team on every request.
-    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteriaDTO criteria, Pageable pageable) {
+    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteria criteria, Pageable pageable) {
         Page<User> userPage = userRepository.findTeamMembersByFilters(criteria, pageable);
 
         List<UUID> userIds = userPage.getContent().stream().map(User::getUserId).toList();

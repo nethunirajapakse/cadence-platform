@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
-public class ReportRequest {
+public class ReportRequestDTO {
 
     @NotNull(message = "Project is required")
     private UUID projectId;

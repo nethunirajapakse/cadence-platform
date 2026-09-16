@@ -1,7 +1,7 @@
 package com.cadence.controller;
 
 import com.cadence.dto.dashboard.*;
-import com.cadence.dto.user.TeamMemberFilterCriteriaDTO;
+import com.cadence.dto.user.TeamMemberFilterCriteria;
 import com.cadence.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -56,7 +56,7 @@ public class DashboardController {
     }
 
     @GetMapping("/team-overview")
-    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteriaDTO criteria, Pageable pageable) {
+    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteria criteria, Pageable pageable) {
         return dashboardService.getTeamMemberOverview(criteria, pageable);
     }
 }

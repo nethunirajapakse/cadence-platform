@@ -37,7 +37,7 @@ public class ReportService {
 
     // ---- create / edit -----------------------------------------------------
 
-    public ReportResponse createDraft(UUID userId, ReportRequest request) {
+    public ReportResponseDTO createDraft(UUID userId, ReportRequestDTO request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         Project project = projectRepository.findById(request.getProjectId())
@@ -58,7 +58,7 @@ public class ReportService {
         return toResponse(report);
     }
 
-    public ReportResponse updateDraft(UUID reportId, ReportRequest request) {
+    public ReportResponseDTO updateDraft(UUID reportId, ReportRequestDTO request) {
         WeeklyReport report = findOrThrow(reportId);
 
         if (report.getStatus() != ReportStatus.DRAFT && report.getStatus() != ReportStatus.NEEDS_CORRECTION) {
@@ -82,7 +82,7 @@ public class ReportService {
 
     // ---- submit / review ---------------------------------------------------
 
-    public ReportResponse submit(UUID reportId) {
+    public ReportResponseDTO submit(UUID reportId) {
         WeeklyReport report = findOrThrow(reportId);
 
         if (report.getStatus() != ReportStatus.DRAFT && report.getStatus() != ReportStatus.NEEDS_CORRECTION) {
@@ -99,7 +99,7 @@ public class ReportService {
         return toResponse(report);
     }
 
-    public ReportResponse review(UUID reportId, ReviewRequestDTO request) {
+    public ReportResponseDTO review(UUID reportId, ReviewRequestDTO request) {
         WeeklyReport report = findOrThrow(reportId);
 
         if (report.getStatus() != ReportStatus.SUBMITTED) {
@@ -138,7 +138,7 @@ public class ReportService {
         }
     }
 
-    public ReportResponse editManagerComment(UUID reportId, String newComment) {
+    public ReportResponseDTO editManagerComment(UUID reportId, String newComment) {
         WeeklyReport report = findOrThrow(reportId);
 
         if (report.getStatus() != ReportStatus.NEEDS_CORRECTION) {
@@ -173,7 +173,7 @@ public class ReportService {
     // ---- reads --------------------------------------------------------------
 
     @Transactional(readOnly = true)
-    public ReportResponse getDetail(UUID reportId) {
+    public ReportResponseDTO getDetail(UUID reportId) {
         return toResponse(findOrThrow(reportId));
     }
 
@@ -203,7 +203,7 @@ public class ReportService {
                 .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
     }
 
-    private void applyChildCollections(WeeklyReport report, ReportRequest request) {
+    private void applyChildCollections(WeeklyReport report, ReportRequestDTO request) {
         report.getTasks().clear();
         request.getTasks().forEach(dto -> report.getTasks().add(
                 ReportTask.builder()
@@ -306,12 +306,12 @@ public class ReportService {
         reportVersionRepository.save(version);
     }
 
-    private ReportResponse toResponse(WeeklyReport report) {
+    private ReportResponseDTO toResponse(WeeklyReport report) {
         ReportVersion currentVersion = reportVersionRepository
                 .findByReport_ReportIdAndCurrentTrue(report.getReportId())
                 .orElse(null);
 
-        return new ReportResponse(
+        return new ReportResponseDTO(
                 report,
                 mapTasks(report),
                 mapNextWeekTasks(report),

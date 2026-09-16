@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Getter
-public class ReportResponse {
+public class ReportResponseDTO {
 
     private final UUID reportId;
     private final UUID userId;
@@ -37,7 +37,7 @@ public class ReportResponse {
     // "(edited)" label.
     private final boolean managerCommentEdited;
 
-    public ReportResponse(
+    public ReportResponseDTO(
             WeeklyReport report,
             List<ReportTaskDTO> tasks,
             List<NextWeekTaskDTO> nextWeekTasks,

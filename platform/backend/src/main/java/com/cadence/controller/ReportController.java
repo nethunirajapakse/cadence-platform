@@ -27,21 +27,21 @@ public class ReportController {
 
     @PostMapping
     @PreAuthorize("hasRole('TEAM_MEMBER')")
-    public ResponseEntity<ReportResponse> create(
-            @Valid @RequestBody ReportRequest request, @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<ReportResponseDTO> create(
+            @Valid @RequestBody ReportRequestDTO request, @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(reportService.createDraft(principal.getUserId(), request));
     }
 
     @PutMapping("/{reportId}")
     @PreAuthorize("hasRole('TEAM_MEMBER') and @reportAccessService.isOwner(#reportId, authentication)")
-    public ReportResponse update(@PathVariable UUID reportId, @Valid @RequestBody ReportRequest request) {
+    public ReportResponseDTO update(@PathVariable UUID reportId, @Valid @RequestBody ReportRequestDTO request) {
         return reportService.updateDraft(reportId, request);
     }
 
     @PostMapping("/{reportId}/submit")
     @PreAuthorize("hasRole('TEAM_MEMBER') and @reportAccessService.isOwner(#reportId, authentication)")
-    public ReportResponse submit(@PathVariable UUID reportId) {
+    public ReportResponseDTO submit(@PathVariable UUID reportId) {
         return reportService.submit(reportId);
     }
 
@@ -61,7 +61,7 @@ public class ReportController {
 
     @GetMapping("/{reportId}")
     @PreAuthorize("@reportAccessService.canView(#reportId, authentication)")
-    public ReportResponse getDetail(@PathVariable UUID reportId) {
+    public ReportResponseDTO getDetail(@PathVariable UUID reportId) {
         return reportService.getDetail(reportId);
     }
 
@@ -81,13 +81,13 @@ public class ReportController {
 
     @PostMapping("/{reportId}/review")
     @PreAuthorize("hasRole('MANAGER')")
-    public ReportResponse review(@PathVariable UUID reportId, @Valid @RequestBody ReviewRequestDTO request) {
+    public ReportResponseDTO review(@PathVariable UUID reportId, @Valid @RequestBody ReviewRequestDTO request) {
         return reportService.review(reportId, request);
     }
 
     @PatchMapping("/{reportId}/comment")
     @PreAuthorize("hasRole('MANAGER')")
-    public ReportResponse editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequestDTO request) {
+    public ReportResponseDTO editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequestDTO request) {
         return reportService.editManagerComment(reportId, request.getComment());
     }
 }

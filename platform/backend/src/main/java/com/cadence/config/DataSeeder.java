@@ -3,7 +3,7 @@ package com.cadence.config;
 import com.cadence.config.seed.SeedProject;
 import com.cadence.config.seed.SeedReport;
 import com.cadence.config.seed.SeedUser;
-import com.cadence.dto.report.ReportRequest;
+import com.cadence.dto.report.ReportRequestDTO;
 import com.cadence.dto.report.ReviewDecision;
 import com.cadence.dto.report.ReviewRequestDTO;
 import com.cadence.entity.Project;
@@ -146,7 +146,7 @@ public class DataSeeder implements CommandLineRunner {
         LocalDate weekStart = mostRecentMonday.minusWeeks(seedReport.getWeeksAgo());
         LocalDate weekEnd = weekStart.plusDays(4); // Mon-Fri work week
 
-        ReportRequest request = new ReportRequest();
+        ReportRequestDTO request = new ReportRequestDTO();
         request.setProjectId(project.getProjectId());
         request.setWeekStartDate(weekStart);
         request.setWeekEndDate(weekEnd);

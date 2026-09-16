@@ -8,7 +8,7 @@ import lombok.Setter;
 // ProjectFilterCriteria.
 @Getter
 @Setter
-public class TeamMemberFilterCriteriaDTO {
+public class TeamMemberFilterCriteria {
     private String name;
     private String email;
 }
