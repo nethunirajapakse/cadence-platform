@@ -3,9 +3,9 @@ package com.cadence.config;
 import com.cadence.config.seed.SeedProject;
 import com.cadence.config.seed.SeedReport;
 import com.cadence.config.seed.SeedUser;
-import com.cadence.dto.ReportRequest;
-import com.cadence.dto.ReviewDecision;
-import com.cadence.dto.ReviewRequest;
+import com.cadence.dto.report.ReportRequest;
+import com.cadence.dto.report.ReviewDecision;
+import com.cadence.dto.report.ReviewRequestDTO;
 import com.cadence.entity.Project;
 import com.cadence.entity.ReportVersion;
 import com.cadence.entity.Role;
@@ -184,8 +184,8 @@ public class DataSeeder implements CommandLineRunner {
         backdateTimestamps(reportId, weekEnd);
     }
 
-    private ReviewRequest reviewRequest(ReviewDecision decision, String comment) {
-        ReviewRequest request = new ReviewRequest();
+    private ReviewRequestDTO reviewRequest(ReviewDecision decision, String comment) {
+        ReviewRequestDTO request = new ReviewRequestDTO();
         request.setDecision(decision);
         request.setComment(comment);
         return request;

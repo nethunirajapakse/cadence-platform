@@ -1,6 +1,6 @@
 package com.cadence.repository;
 
-import com.cadence.dto.TeamMemberFilterCriteria;
+import com.cadence.dto.user.TeamMemberFilterCriteriaDTO;
 import com.cadence.entity.QUser;
 import com.cadence.entity.User;
 import com.cadence.entity.enums.RoleName;
@@ -20,7 +20,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<User> findTeamMembersByFilters(TeamMemberFilterCriteria criteria, Pageable pageable) {
+    public Page<User> findTeamMembersByFilters(TeamMemberFilterCriteriaDTO criteria, Pageable pageable) {
         QUser user = QUser.user;
         BooleanBuilder predicate = new BooleanBuilder();
 

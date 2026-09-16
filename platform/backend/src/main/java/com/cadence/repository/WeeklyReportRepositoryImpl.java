@@ -1,6 +1,6 @@
 package com.cadence.repository;
 
-import com.cadence.dto.ReportFilterCriteria;
+import com.cadence.dto.report.ReportFilterCriteria;
 import com.cadence.entity.QWeeklyReport;
 import com.cadence.entity.WeeklyReport;
 import com.cadence.entity.enums.ReportStatus;

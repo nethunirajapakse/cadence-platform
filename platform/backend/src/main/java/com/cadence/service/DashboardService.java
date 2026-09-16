@@ -1,7 +1,7 @@
 package com.cadence.service;
 
-import com.cadence.dto.*;
-import com.cadence.entity.Blocker;
+import com.cadence.dto.dashboard.*;
+import com.cadence.dto.user.TeamMemberFilterCriteriaDTO;
 import com.cadence.entity.ReportTask;
 import com.cadence.entity.TimeLog;
 import com.cadence.entity.User;
@@ -39,7 +39,7 @@ public class DashboardService {
     private final BlockerRepository blockerRepository;
     private final TimeLogRepository timeLogRepository;
 
-    public DashboardSummaryResponse getSummary() {
+    public DashboardSummaryResponseDTO getSummary() {
         LocalDate currentWeekStart = mostRecentMonday();
         LocalDate currentWeekEnd = currentWeekStart.plusDays(4);
         LocalDate today = LocalDate.now();
@@ -73,14 +73,14 @@ public class DashboardService {
                 .findAllForReportsInStatuses(List.of(ReportStatus.SUBMITTED, ReportStatus.NEEDS_CORRECTION))
                 .size();
 
-        return new DashboardSummaryResponse(
+        return new DashboardSummaryResponseDTO(
                 submitted,
-                new SubmissionCompliance(submitted, pending, late, teamMembers.size()),
+                new SubmissionComplianceDTO(submitted, pending, late, teamMembers.size()),
                 (int) needsCorrectionCount,
                 (int) openBlockersCount);
     }
 
-    public List<TasksTrendPoint> getTasksCompletedTrend() {
+    public List<TasksTrendPointDTO> getTasksCompletedTrend() {
         List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
 
         Map<LocalDate, Long> countsByWeek = tasks.stream()
@@ -89,11 +89,11 @@ public class DashboardService {
 
         return countsByWeek.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .map(e -> new TasksTrendPoint(e.getKey(), e.getValue().intValue()))
+                .map(e -> new TasksTrendPointDTO(e.getKey(), e.getValue().intValue()))
                 .toList();
     }
 
-    public List<MemberStatusBreakdown> getStatusByMember() {
+    public List<MemberStatusBreakdownDTO> getStatusByMember() {
         List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT);
 
         Map<String, List<WeeklyReport>> byUser = reports.stream()
@@ -103,29 +103,29 @@ public class DashboardService {
                 .map(e -> {
                     Map<ReportStatus, Long> counts = e.getValue().stream()
                             .collect(Collectors.groupingBy(WeeklyReport::getStatus, Collectors.counting()));
-                    return new MemberStatusBreakdown(
+                    return new MemberStatusBreakdownDTO(
                             e.getKey(),
                             counts.getOrDefault(ReportStatus.SUBMITTED, 0L).intValue(),
                             counts.getOrDefault(ReportStatus.NEEDS_CORRECTION, 0L).intValue(),
                             counts.getOrDefault(ReportStatus.APPROVED, 0L).intValue());
                 })
-                .sorted(Comparator.comparing(MemberStatusBreakdown::getUserName))
+                .sorted(Comparator.comparing(MemberStatusBreakdownDTO::getUserName))
                 .toList();
     }
 
-    public List<ProjectWorkload> getWorkloadByProject() {
+    public List<ProjectWorkloadDTO> getWorkloadByProject() {
         List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
 
         Map<String, Long> counts = tasks.stream()
                 .collect(Collectors.groupingBy(t -> t.getReport().getProject().getName(), Collectors.counting()));
 
         return counts.entrySet().stream()
-                .map(e -> new ProjectWorkload(e.getKey(), e.getValue().intValue()))
-                .sorted(Comparator.comparing(ProjectWorkload::getTaskCount).reversed())
+                .map(e -> new ProjectWorkloadDTO(e.getKey(), e.getValue().intValue()))
+                .sorted(Comparator.comparing(ProjectWorkloadDTO::getTaskCount).reversed())
                 .toList();
     }
 
-    public List<TaskTypeHours> getTimeByTaskType() {
+    public List<TaskTypeHoursDTO> getTimeByTaskType() {
         List<TimeLog> logs = timeLogRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
 
         Map<String, BigDecimal> sums = logs.stream()
@@ -134,18 +134,18 @@ public class DashboardService {
                         Collectors.reducing(BigDecimal.ZERO, TimeLog::getHours, BigDecimal::add)));
 
         return sums.entrySet().stream()
-                .map(e -> new TaskTypeHours(e.getKey(), e.getValue()))
-                .sorted(Comparator.comparing(TaskTypeHours::getTotalHours).reversed())
+                .map(e -> new TaskTypeHoursDTO(e.getKey(), e.getValue()))
+                .sorted(Comparator.comparing(TaskTypeHoursDTO::getTotalHours).reversed())
                 .toList();
     }
 
-    public List<ActivityItem> getRecentActivity(int limit) {
+    public List<ActivityItemDTO> getRecentActivity(int limit) {
         List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT);
 
         return reports.stream()
                 .map(this::toActivityItem)
                 .filter(item -> item.getActionAt() != null)
-                .sorted(Comparator.comparing(ActivityItem::getActionAt).reversed())
+                .sorted(Comparator.comparing(ActivityItemDTO::getActionAt).reversed())
                 .limit(limit)
                 .toList();
     }
@@ -155,7 +155,7 @@ public class DashboardService {
     // reports are excluded here too, for the same reason a manager can't see
     // them anywhere else: they're not "this person's activity" from a
     // manager's point of view until submitted.
-    public MemberStatsResponse getMemberStats(UUID userId) {
+    public MemberStatsResponseDTO getMemberStats(UUID userId) {
         List<WeeklyReport> allReports = weeklyReportRepository
                 .findByUser_UserId(userId, Pageable.unpaged())
                 .getContent();
@@ -177,7 +177,7 @@ public class DashboardService {
                 .flatMap(r -> r.getBlockers().stream())
                 .count();
 
-        return new MemberStatsResponse(visible.size(), approved, needsCorrection, tasksCompleted, openBlockers);
+        return new MemberStatsResponseDTO(visible.size(), approved, needsCorrection, tasksCompleted, openBlockers);
     }
 
     // Backs the paginated "Team members" list page. Filters and pages the
@@ -185,7 +185,7 @@ public class DashboardService {
     // Projects search - dynamic predicates instead of a null-guarded JPQL
     // string), then computes report stats only for whichever page of users
     // came back - not the whole team on every request.
-    public Page<TeamMemberOverview> getTeamMemberOverview(TeamMemberFilterCriteria criteria, Pageable pageable) {
+    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteriaDTO criteria, Pageable pageable) {
         Page<User> userPage = userRepository.findTeamMembersByFilters(criteria, pageable);
 
         List<UUID> userIds = userPage.getContent().stream().map(User::getUserId).toList();
@@ -196,7 +196,7 @@ public class DashboardService {
         Map<UUID, List<WeeklyReport>> reportsByUserId = reports.stream()
                 .collect(Collectors.groupingBy(r -> r.getUser().getUserId()));
 
-        List<TeamMemberOverview> overview = userPage.getContent().stream()
+        List<TeamMemberOverviewDTO> overview = userPage.getContent().stream()
                 .map(member -> {
                     List<WeeklyReport> memberReports = reportsByUserId.getOrDefault(member.getUserId(), List.of());
                     int approved = (int) memberReports.stream().filter(r -> r.getStatus() == ReportStatus.APPROVED).count();
@@ -204,7 +204,7 @@ public class DashboardService {
                             .filter(r -> r.getStatus() == ReportStatus.NEEDS_CORRECTION)
                             .count();
 
-                    return new TeamMemberOverview(
+                    return new TeamMemberOverviewDTO(
                             member.getUserId(),
                             member.getName(),
                             member.getEmail(),
@@ -218,7 +218,7 @@ public class DashboardService {
         return new PageImpl<>(overview, pageable, userPage.getTotalElements());
     }
 
-    private ActivityItem toActivityItem(WeeklyReport report) {
+    private ActivityItemDTO toActivityItem(WeeklyReport report) {
         LocalDateTime actionAt = report.getApprovedAt() != null ? report.getApprovedAt() : report.getSubmittedAt();
 
         String description = switch (report.getStatus()) {
@@ -228,7 +228,7 @@ public class DashboardService {
             case DRAFT -> report.getUser().getName() + "'s report is still a draft";
         };
 
-        return new ActivityItem(
+        return new ActivityItemDTO(
                 report.getReportId(),
                 report.getUser().getName(),
                 report.getProject().getName(),

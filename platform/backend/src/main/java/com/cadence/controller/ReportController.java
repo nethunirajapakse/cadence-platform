@@ -1,6 +1,6 @@
 package com.cadence.controller;
 
-import com.cadence.dto.*;
+import com.cadence.dto.report.*;
 import com.cadence.security.UserPrincipal;
 import com.cadence.service.ReportService;
 import jakarta.validation.Valid;
@@ -52,7 +52,7 @@ public class ReportController {
     // in the service/repository layer (own drafts are included here).
     @GetMapping("/mine")
     @PreAuthorize("hasRole('TEAM_MEMBER')")
-    public Page<ReportSummaryResponse> myHistory(
+    public Page<ReportSummaryResponseDTO> myHistory(
             @AuthenticationPrincipal UserPrincipal principal, ReportFilterCriteria criteria, Pageable pageable) {
         return reportService.getOwnHistory(principal.getUserId(), criteria, pageable);
     }
@@ -67,7 +67,7 @@ public class ReportController {
 
     @GetMapping("/{reportId}/versions")
     @PreAuthorize("@reportAccessService.canView(#reportId, authentication)")
-    public List<ReportVersionResponse> getVersions(@PathVariable UUID reportId) {
+    public List<ReportVersionResponseDTO> getVersions(@PathVariable UUID reportId) {
         return reportService.getVersions(reportId);
     }
 
@@ -75,19 +75,19 @@ public class ReportController {
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public Page<ReportSummaryResponse> dashboard(ReportFilterCriteria criteria, Pageable pageable) {
+    public Page<ReportSummaryResponseDTO> dashboard(ReportFilterCriteria criteria, Pageable pageable) {
         return reportService.getDashboard(criteria, pageable);
     }
 
     @PostMapping("/{reportId}/review")
     @PreAuthorize("hasRole('MANAGER')")
-    public ReportResponse review(@PathVariable UUID reportId, @Valid @RequestBody ReviewRequest request) {
+    public ReportResponse review(@PathVariable UUID reportId, @Valid @RequestBody ReviewRequestDTO request) {
         return reportService.review(reportId, request);
     }
 
     @PatchMapping("/{reportId}/comment")
     @PreAuthorize("hasRole('MANAGER')")
-    public ReportResponse editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequest request) {
+    public ReportResponse editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequestDTO request) {
         return reportService.editManagerComment(reportId, request.getComment());
     }
 }

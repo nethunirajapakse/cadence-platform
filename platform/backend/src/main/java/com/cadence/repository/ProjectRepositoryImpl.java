@@ -1,6 +1,6 @@
 package com.cadence.repository;
 
-import com.cadence.dto.ProjectFilterCriteria;
+import com.cadence.dto.project.ProjectFilterCriteria;
 import com.cadence.entity.Project;
 import com.cadence.entity.QProject;
 import com.querydsl.core.BooleanBuilder;

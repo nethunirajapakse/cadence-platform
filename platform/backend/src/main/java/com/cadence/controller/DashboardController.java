@@ -1,6 +1,7 @@
 package com.cadence.controller;
 
-import com.cadence.dto.*;
+import com.cadence.dto.dashboard.*;
+import com.cadence.dto.user.TeamMemberFilterCriteriaDTO;
 import com.cadence.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,42 +21,42 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/summary")
-    public DashboardSummaryResponse getSummary() {
+    public DashboardSummaryResponseDTO getSummary() {
         return dashboardService.getSummary();
     }
 
     @GetMapping("/tasks-trend")
-    public List<TasksTrendPoint> getTasksCompletedTrend() {
+    public List<TasksTrendPointDTO> getTasksCompletedTrend() {
         return dashboardService.getTasksCompletedTrend();
     }
 
     @GetMapping("/status-by-member")
-    public List<MemberStatusBreakdown> getStatusByMember() {
+    public List<MemberStatusBreakdownDTO> getStatusByMember() {
         return dashboardService.getStatusByMember();
     }
 
     @GetMapping("/workload-by-project")
-    public List<ProjectWorkload> getWorkloadByProject() {
+    public List<ProjectWorkloadDTO> getWorkloadByProject() {
         return dashboardService.getWorkloadByProject();
     }
 
     @GetMapping("/time-by-task-type")
-    public List<TaskTypeHours> getTimeByTaskType() {
+    public List<TaskTypeHoursDTO> getTimeByTaskType() {
         return dashboardService.getTimeByTaskType();
     }
 
     @GetMapping("/recent-activity")
-    public List<ActivityItem> getRecentActivity(@RequestParam(defaultValue = "15") int limit) {
+    public List<ActivityItemDTO> getRecentActivity(@RequestParam(defaultValue = "15") int limit) {
         return dashboardService.getRecentActivity(limit);
     }
 
     @GetMapping("/member-stats/{userId}")
-    public MemberStatsResponse getMemberStats(@PathVariable UUID userId) {
+    public MemberStatsResponseDTO getMemberStats(@PathVariable UUID userId) {
         return dashboardService.getMemberStats(userId);
     }
 
     @GetMapping("/team-overview")
-    public Page<TeamMemberOverview> getTeamMemberOverview(TeamMemberFilterCriteria criteria, Pageable pageable) {
+    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteriaDTO criteria, Pageable pageable) {
         return dashboardService.getTeamMemberOverview(criteria, pageable);
     }
 }

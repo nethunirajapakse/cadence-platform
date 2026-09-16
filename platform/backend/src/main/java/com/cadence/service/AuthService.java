@@ -1,8 +1,8 @@
 package com.cadence.service;
 
-import com.cadence.dto.AuthResponse;
-import com.cadence.dto.LoginRequest;
-import com.cadence.dto.RegisterRequest;
+import com.cadence.dto.auth.AuthResponseDTO;
+import com.cadence.dto.auth.LoginRequestDTO;
+import com.cadence.dto.auth.RegisterRequestDTO;
 import com.cadence.entity.Role;
 import com.cadence.entity.User;
 import com.cadence.repository.RoleRepository;
@@ -25,7 +25,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    public AuthResult register(RegisterRequest request) {
+    public AuthResult register(RegisterRequestDTO request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalStateException("An account with this email already exists");
         }
@@ -45,13 +45,13 @@ public class AuthService {
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtService.generateToken(principal);
-        AuthResponse userResponse = new AuthResponse(
+        AuthResponseDTO userResponse = new AuthResponseDTO(
                 user.getUserId(), user.getName(), user.getEmail(), role.getRoleName().name());
 
         return new AuthResult(token, userResponse);
     }
 
-    public AuthResult login(LoginRequest request) {
+    public AuthResult login(LoginRequestDTO request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -61,7 +61,7 @@ public class AuthService {
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtService.generateToken(principal);
-        AuthResponse userResponse = new AuthResponse(
+        AuthResponseDTO userResponse = new AuthResponseDTO(
                 user.getUserId(), user.getName(), user.getEmail(), user.getRole().getRoleName().name());
 
         return new AuthResult(token, userResponse);

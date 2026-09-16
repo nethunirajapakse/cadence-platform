@@ -1,6 +1,6 @@
 package com.cadence.repository;
 
-import com.cadence.dto.ReportFilterCriteria;
+import com.cadence.dto.report.ReportFilterCriteria;
 import com.cadence.entity.WeeklyReport;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

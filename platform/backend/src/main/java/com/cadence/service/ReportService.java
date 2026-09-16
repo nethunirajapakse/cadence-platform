@@ -1,6 +1,7 @@
 package com.cadence.service;
 
-import com.cadence.dto.*;
+import com.cadence.dto.report.*;
+import com.cadence.dto.report.item.*;
 import com.cadence.entity.*;
 import com.cadence.entity.enums.ReportStatus;
 import com.cadence.repository.*;
@@ -95,7 +96,7 @@ public class ReportService {
         return toResponse(report);
     }
 
-    public ReportResponse review(UUID reportId, ReviewRequest request) {
+    public ReportResponse review(UUID reportId, ReviewRequestDTO request) {
         WeeklyReport report = findOrThrow(reportId);
 
         if (report.getStatus() != ReportStatus.SUBMITTED) {
@@ -174,21 +175,21 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReportSummaryResponse> getOwnHistory(UUID userId, ReportFilterCriteria criteria, Pageable pageable) {
+    public Page<ReportSummaryResponseDTO> getOwnHistory(UUID userId, ReportFilterCriteria criteria, Pageable pageable) {
         return weeklyReportRepository.findForOwnHistory(userId, criteria, pageable)
-                .map(ReportSummaryResponse::new);
+                .map(ReportSummaryResponseDTO::new);
     }
 
     @Transactional(readOnly = true)
-    public Page<ReportSummaryResponse> getDashboard(ReportFilterCriteria criteria, Pageable pageable) {
+    public Page<ReportSummaryResponseDTO> getDashboard(ReportFilterCriteria criteria, Pageable pageable) {
         return weeklyReportRepository.findForDashboard(criteria, pageable)
-                .map(ReportSummaryResponse::new);
+                .map(ReportSummaryResponseDTO::new);
     }
 
     @Transactional(readOnly = true)
-    public List<ReportVersionResponse> getVersions(UUID reportId) {
+    public List<ReportVersionResponseDTO> getVersions(UUID reportId) {
         return reportVersionRepository.findByReport_ReportIdOrderByVersionNumberAsc(reportId).stream()
-                .map(ReportVersionResponse::new)
+                .map(ReportVersionResponseDTO::new)
                 .toList();
     }
 
@@ -319,9 +320,9 @@ public class ReportService {
                 currentVersion != null && currentVersion.isCommentEdited());
     }
 
-    private List<ReportTaskDto> mapTasks(WeeklyReport report) {
+    private List<ReportTaskDTO> mapTasks(WeeklyReport report) {
         return report.getTasks().stream().map(t -> {
-            ReportTaskDto dto = new ReportTaskDto();
+            ReportTaskDTO dto = new ReportTaskDTO();
             dto.setTaskName(t.getTaskName());
             dto.setPriority(t.getPriority());
             dto.setPlannedPct(t.getPlannedPct());
@@ -334,45 +335,45 @@ public class ReportService {
         }).toList();
     }
 
-    private List<NextWeekTaskDto> mapNextWeekTasks(WeeklyReport report) {
+    private List<NextWeekTaskDTO> mapNextWeekTasks(WeeklyReport report) {
         return report.getNextWeekTasks().stream().map(t -> {
-            NextWeekTaskDto dto = new NextWeekTaskDto();
+            NextWeekTaskDTO dto = new NextWeekTaskDTO();
             dto.setTaskDescription(t.getTaskDescription());
             dto.setPriority(t.getPriority());
             return dto;
         }).toList();
     }
 
-    private List<BlockerDto> mapBlockers(WeeklyReport report) {
+    private List<BlockerDTO> mapBlockers(WeeklyReport report) {
         return report.getBlockers().stream().map(b -> {
-            BlockerDto dto = new BlockerDto();
+            BlockerDTO dto = new BlockerDTO();
             dto.setDescription(b.getDescription());
             dto.setKeyIssue(b.isKeyIssue());
             return dto;
         }).toList();
     }
 
-    private List<AchievementDto> mapAchievements(WeeklyReport report) {
+    private List<AchievementDTO> mapAchievements(WeeklyReport report) {
         return report.getAchievements().stream().map(a -> {
-            AchievementDto dto = new AchievementDto();
+            AchievementDTO dto = new AchievementDTO();
             dto.setDescription(a.getDescription());
             dto.setKeyAchievement(a.isKeyAchievement());
             return dto;
         }).toList();
     }
 
-    private List<TimeLogDto> mapTimeLogs(WeeklyReport report) {
+    private List<TimeLogDTO> mapTimeLogs(WeeklyReport report) {
         return report.getTimeLogs().stream().map(t -> {
-            TimeLogDto dto = new TimeLogDto();
+            TimeLogDTO dto = new TimeLogDTO();
             dto.setTaskType(t.getTaskType());
             dto.setHours(t.getHours());
             return dto;
         }).toList();
     }
 
-    private List<NoteLinkDto> mapNoteLinks(WeeklyReport report) {
+    private List<NoteLinkDTO> mapNoteLinks(WeeklyReport report) {
         return report.getNoteLinks().stream().map(n -> {
-            NoteLinkDto dto = new NoteLinkDto();
+            NoteLinkDTO dto = new NoteLinkDTO();
             dto.setType(n.getType());
             dto.setContent(n.getContent());
             return dto;

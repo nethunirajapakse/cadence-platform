@@ -1,8 +1,8 @@
 package com.cadence.controller;
 
 import com.cadence.dto.ProjectFilterCriteria;
-import com.cadence.dto.ProjectRequest;
-import com.cadence.dto.ProjectResponse;
+import com.cadence.dto.ProjectRequestDTO;
+import com.cadence.dto.ProjectResponseDTO;
 import com.cadence.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,19 +25,19 @@ public class ProjectController {
     // same pattern as ReportController's dashboard endpoint - ?name=foo&
     // description=bar map straight onto ProjectFilterCriteria's fields.
     @GetMapping
-    public List<ProjectResponse> list(ProjectFilterCriteria criteria) {
+    public List<ProjectResponseDTO> list(ProjectFilterCriteria criteria) {
         return projectService.listAll(criteria);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ProjectResponse> create(@Valid @RequestBody ProjectRequest request) {
+    public ResponseEntity<ProjectResponseDTO> create(@Valid @RequestBody ProjectRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(projectService.create(request));
     }
 
     @PutMapping("/{projectId}")
     @PreAuthorize("hasRole('MANAGER')")
-    public ProjectResponse update(@PathVariable UUID projectId, @Valid @RequestBody ProjectRequest request) {
+    public ProjectResponseDTO update(@PathVariable UUID projectId, @Valid @RequestBody ProjectRequestDTO request) {
         return projectService.update(projectId, request);
     }
 

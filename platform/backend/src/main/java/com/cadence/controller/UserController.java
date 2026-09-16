@@ -1,7 +1,7 @@
 package com.cadence.controller;
 
-import com.cadence.dto.TeamMemberSummary;
-import com.cadence.dto.UserProfileResponse;
+import com.cadence.dto.user.TeamMemberSummaryDTO;
+import com.cadence.dto.user.UserProfileResponseDTO;
 import com.cadence.entity.User;
 import com.cadence.entity.enums.RoleName;
 import com.cadence.repository.UserRepository;
@@ -26,10 +26,10 @@ public class UserController {
     // Backs the manager dashboard's "filter by team member" dropdown.
     @GetMapping("/team-members")
     @PreAuthorize("hasRole('MANAGER')")
-    public List<TeamMemberSummary> getTeamMembers() {
+    public List<TeamMemberSummaryDTO> getTeamMembers() {
         return userRepository.findByRoleName(RoleName.TEAM_MEMBER).stream()
-                .map(TeamMemberSummary::new)
-                .sorted(Comparator.comparing(TeamMemberSummary::getName))
+                .map(TeamMemberSummaryDTO::new)
+                .sorted(Comparator.comparing(TeamMemberSummaryDTO::getName))
                 .toList();
     }
 
@@ -37,9 +37,9 @@ public class UserController {
     // a team member has no reason to look up another user's basic info this way.
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('MANAGER')")
-    public UserProfileResponse getUserProfile(@PathVariable UUID userId) {
+    public UserProfileResponseDTO getUserProfile(@PathVariable UUID userId) {
         User user = userRepository.findByIdWithRole(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        return new UserProfileResponse(user);
+        return new UserProfileResponseDTO(user);
     }
 }

@@ -1,8 +1,8 @@
 package com.cadence.service;
 
-import com.cadence.dto.ProjectFilterCriteria;
-import com.cadence.dto.ProjectRequest;
-import com.cadence.dto.ProjectResponse;
+import com.cadence.dto.project.ProjectFilterCriteria;
+import com.cadence.dto.project.ProjectRequestDTO;
+import com.cadence.dto.project.ProjectResponseDTO;
 import com.cadence.entity.Project;
 import com.cadence.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,29 +17,29 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
 
-    public List<ProjectResponse> listAll(ProjectFilterCriteria criteria) {
+    public List<ProjectResponseDTO> listAll(ProjectFilterCriteria criteria) {
         return projectRepository.findByFilters(criteria).stream()
-                .map(ProjectResponse::new)
+                .map(ProjectResponseDTO::new)
                 .toList();
     }
 
-    public ProjectResponse create(ProjectRequest request) {
+    public ProjectResponseDTO create(ProjectRequestDTO request) {
         assertNameAvailable(request.getName(), null);
 
         Project project = Project.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .build();
-        return new ProjectResponse(projectRepository.save(project));
+        return new ProjectResponseDTO(projectRepository.save(project));
     }
 
-    public ProjectResponse update(UUID projectId, ProjectRequest request) {
+    public ProjectResponseDTO update(UUID projectId, ProjectRequestDTO request) {
         Project project = findOrThrow(projectId);
         assertNameAvailable(request.getName(), projectId);
 
         project.setName(request.getName());
         project.setDescription(request.getDescription());
-        return new ProjectResponse(projectRepository.save(project));
+        return new ProjectResponseDTO(projectRepository.save(project));
     }
 
     public void delete(UUID projectId) {

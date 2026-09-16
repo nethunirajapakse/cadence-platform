@@ -1,6 +1,6 @@
 package com.cadence.config.seed;
 
-import com.cadence.dto.*;
+import com.cadence.dto.report.item.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,12 +13,12 @@ public class SeedReport {
     private String projectName;
     private int weeksAgo;
     private String notes;
-    private List<ReportTaskDto> tasks;
-    private List<NextWeekTaskDto> nextWeekTasks;
-    private List<BlockerDto> blockers;
-    private List<AchievementDto> achievements;
-    private List<TimeLogDto> timeLogs;
-    private List<NoteLinkDto> noteLinks;
+    private List<ReportTaskDTO> tasks;
+    private List<NextWeekTaskDTO> nextWeekTasks;
+    private List<BlockerDTO> blockers;
+    private List<AchievementDTO> achievements;
+    private List<TimeLogDTO> timeLogs;
+    private List<NoteLinkDTO> noteLinks;
 
     // "DRAFT" | "SUBMITTED" | "NEEDS_CORRECTION" | "APPROVED" | "APPROVED_AFTER_CORRECTION"
     // The last one simulates a full two-round review cycle: submit -> request
