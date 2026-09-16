@@ -1,8 +1,8 @@
 package com.cadence.controller;
 
-import com.cadence.dto.ProjectFilterCriteria;
-import com.cadence.dto.ProjectRequestDTO;
-import com.cadence.dto.ProjectResponseDTO;
+import com.cadence.dto.project.ProjectFilterCriteria;
+import com.cadence.dto.project.ProjectRequestDTO;
+import com.cadence.dto.project.ProjectResponseDTO;
 import com.cadence.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
