@@ -24,11 +24,7 @@ public class WeeklyReportRepositoryImpl implements WeeklyReportRepositoryCustom 
         QWeeklyReport report = QWeeklyReport.weeklyReport;
 
         BooleanBuilder predicate = new BooleanBuilder();
-
-        // Drafts are never visible to a manager, per the spec - unconditional,
-        // applies even if a caller explicitly passes statuses containing DRAFT.
         predicate.and(report.status.ne(ReportStatus.DRAFT));
-
         applyCommonFilters(predicate, report, criteria);
 
         return runQuery(report, predicate, pageable);
@@ -39,7 +35,7 @@ public class WeeklyReportRepositoryImpl implements WeeklyReportRepositoryCustom 
         QWeeklyReport report = QWeeklyReport.weeklyReport;
 
         BooleanBuilder predicate = new BooleanBuilder();
-        predicate.and(report.user.userId.eq(userId)); // always scoped to the caller - no status exclusion here
+        predicate.and(report.user.userId.eq(userId));
 
         applyCommonFilters(predicate, report, criteria);
 

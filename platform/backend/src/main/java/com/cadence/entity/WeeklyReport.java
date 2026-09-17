@@ -24,7 +24,6 @@ public class WeeklyReport {
     @Column(name = "report_id")
     private UUID reportId;
 
-    // Owning team member - every RBAC ownership check compares this to the caller.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

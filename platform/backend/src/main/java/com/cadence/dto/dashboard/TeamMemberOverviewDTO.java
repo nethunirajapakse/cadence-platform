@@ -12,7 +12,7 @@ public class TeamMemberOverviewDTO {
     private String name;
     private String email;
     private String role;
-    private int totalReports;        // excluding DRAFT - same rule as everywhere else
+    private int totalReports;
     private int approvedCount;
     private int needsCorrectionCount;
 }

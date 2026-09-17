@@ -39,18 +39,12 @@ public class ReportVersion {
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
-    // The review comment made against THIS version - null until the manager acts on it.
     @Column(name = "comment", columnDefinition = "TEXT")
     private String comment;
 
-    // When the comment was FIRST posted - the anchor for the 15-minute edit
-    // window. Never reset by an edit, only set the first time a comment is
-    // written for this version.
     @Column(name = "comment_posted_at")
     private LocalDateTime commentPostedAt;
 
-    // True once the comment has been corrected at least once - drives the
-    // "(edited)" label in the UI.
     @Column(name = "comment_edited", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean commentEdited = false;

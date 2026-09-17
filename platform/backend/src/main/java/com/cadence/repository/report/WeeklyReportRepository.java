@@ -20,9 +20,6 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, UUID
 
     long countByStatus(ReportStatus status);
 
-    // Scoped to a specific set of users - backs the paginated "Team members"
-    // overview, so stats are only computed for whichever page of users came
-    // back, not the whole team every time.
     List<WeeklyReport> findByUser_UserIdInAndStatusNot(List<UUID> userIds, ReportStatus status);
 
     @Query("SELECT r FROM WeeklyReport r JOIN FETCH r.user JOIN FETCH r.project WHERE r.status <> :excludedStatus")

@@ -6,9 +6,6 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// Deliberately does NOT include contentSnapshot - a bare list of past versions
-// with timestamps is what the spec asks for ("simple list ... is sufficient").
-// The snapshot itself is available via a separate detail endpoint on demand.
 @Getter
 public class ReportVersionResponseDTO {
     private final UUID versionId;

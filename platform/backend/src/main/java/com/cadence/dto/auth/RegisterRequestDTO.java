@@ -23,9 +23,6 @@ public class RegisterRequestDTO {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    // Self-service role selection at signup - this app has no separate admin/invite
-    // flow (that page was deliberately scoped out), so the person picks their role
-    // here. Worth calling out explicitly in the presentation as a known simplification.
     @NotNull(message = "Role is required")
     private RoleName role;
 }

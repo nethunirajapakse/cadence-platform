@@ -21,9 +21,7 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
-    // criteria is populated by Spring MVC's implicit @ModelAttribute binding,
-    // same pattern as ReportController's dashboard endpoint - ?name=foo&
-    // description=bar map straight onto ProjectFilterCriteria's fields.
+
     @GetMapping
     public List<ProjectResponseDTO> list(ProjectFilterCriteria criteria) {
         return projectService.listAll(criteria);

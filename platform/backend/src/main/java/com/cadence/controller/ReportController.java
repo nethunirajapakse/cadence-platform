@@ -23,8 +23,6 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    // ---- team member: create / edit / submit --------------------------------
-
     @PostMapping
     @PreAuthorize("hasRole('TEAM_MEMBER')")
     public ResponseEntity<ReportResponseDTO> create(
@@ -45,19 +43,12 @@ public class ReportController {
         return reportService.submit(reportId);
     }
 
-    // ---- team member: own history -------------------------------------------
-
-    // criteria is populated by Spring MVC's implicit @ModelAttribute binding,
-    // same as the manager dashboard endpoint below - the difference is entirely
-    // in the service/repository layer (own drafts are included here).
     @GetMapping("/mine")
     @PreAuthorize("hasRole('TEAM_MEMBER')")
     public Page<ReportSummaryResponseDTO> myHistory(
             @AuthenticationPrincipal UserPrincipal principal, ReportFilterCriteria criteria, Pageable pageable) {
         return reportService.getOwnHistory(principal.getUserId(), criteria, pageable);
     }
-
-    // ---- shared: detail + version history (owner, or manager on non-draft) --
 
     @GetMapping("/{reportId}")
     @PreAuthorize("@reportAccessService.canView(#reportId, authentication)")
@@ -70,8 +61,6 @@ public class ReportController {
     public List<ReportVersionResponseDTO> getVersions(@PathVariable UUID reportId) {
         return reportService.getVersions(reportId);
     }
-
-    // ---- manager: dashboard + review -----------------------------------------
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")

@@ -23,7 +23,6 @@ public class UserController {
 
     private final UserRepository userRepository;
 
-    // Backs the manager dashboard's "filter by team member" dropdown.
     @GetMapping("/team-members")
     @PreAuthorize("hasRole('MANAGER')")
     public List<TeamMemberSummaryDTO> getTeamMembers() {
@@ -33,8 +32,6 @@ public class UserController {
                 .toList();
     }
 
-    // Backs the team-member profile page header (name/email/role). Manager-only -
-    // a team member has no reason to look up another user's basic info this way.
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('MANAGER')")
     public UserProfileResponseDTO getUserProfile(@PathVariable UUID userId) {
