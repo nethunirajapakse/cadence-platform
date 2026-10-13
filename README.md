@@ -230,6 +230,8 @@ All API endpoints are under `/api` and protected endpoints require the JWT cooki
 | Users | `/api/users` | Team-member list and member profile |
 | Dashboard | `/api/dashboard` | Team and member summaries, trends, workload, and activity |
 
+<!--
+
 ## Demo data
 
 On a fresh database, startup seeding reads the JSON fixtures in `platform/backend/src/main/resources/seed-data/`.
@@ -250,3 +252,5 @@ For a clean demo dataset, create a new empty database (or deliberately reset a d
 - Build the frontend with `npm run build` and run/package the backend with Maven according to your hosting environment.
 
 For the component and request-flow diagram, see [architecture-diagram.md](architecture-diagram.md).
+
+-->
