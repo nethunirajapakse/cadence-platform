@@ -1,162 +1,43 @@
 # Cadence Platform
 
-Cadence is a weekly-report management platform for team members and managers. Team members can create and submit weekly reports; managers can review submissions, manage projects, and view team analytics.
+A weekly-report platform for teams. Team members write and submit weekly reports; managers review them, manage projects, and track team analytics.
 
-The application consists of a React single-page application, a Spring Boot REST API, and a PostgreSQL database.
+**Stack:** React 19 + TypeScript (Vite, Ant Design) · Spring Boot (Java 21) · PostgreSQL · JWT in an HTTP-only cookie with CSRF protection
 
-## Technology
-
-| Area | Technology |
-| --- | --- |
-| Frontend | React 19, TypeScript, Vite, Ant Design, React Query |
-| Backend | Java 21, Spring Boot, Spring Security, Spring Data JPA, Flyway |
-| Database | PostgreSQL |
-| Authentication | JWT stored in an HTTP-only cookie, with CSRF protection |
-
-## Repository layout
+## Structure
 
 ```text
-.
-├── README.md
-└── platform/
-    ├── frontend/                 # React/Vite client
-    │   ├── src/api/              # API-specific clients
-    │   ├── src/pages/            # Application screens
-    │   ├── src/components/       # Reusable UI
-    │   └── src/context/          # Authentication state
-    └── backend/                  # Spring Boot API
-        ├── src/main/java/com/cadence/
-        │   ├── controller/       # HTTP endpoints
-        │   ├── service/          # Business logic
-        │   ├── repository/       # JPA and custom queries
-        │   ├── entity/           # Persistence model
-        │   └── security/         # JWT, cookies, CSRF, and CORS
-        └── src/main/resources/
-            ├── db/migration/     # Flyway database migrations
-            └── seed-data/        # Development/demo data
-```
-
-## Prerequisites
-
-- Node.js 20 or later and npm
-- JDK 21
-- PostgreSQL (a current supported release; PostgreSQL 17 was used to produce the included schema dump)
-- Optional: Docker, if you prefer to run PostgreSQL in a container
-
-Check the installed tools:
-
-```powershell
-node --version
-npm --version
-java --version
-psql --version
+platform/
+├── frontend/   React single-page app      → see platform/frontend/README.md
+└── backend/    Spring Boot REST API       → see platform/backend/README.md
 ```
 
 ## Quick start
 
-From the repository root, complete these steps in order:
+**Prerequisites:** Node.js 20+, JDK 21, PostgreSQL (or Docker)
 
-1. Start PostgreSQL and create the `weekly_report_db` database.
-2. Configure the backend's local secrets file with that database connection and a JWT secret.
-3. Start the backend. Flyway creates the schema and the application inserts demo data where missing.
-4. Start the frontend and open `http://localhost:5173`.
+**1. Database**
 
-The detailed instructions below use PowerShell. Equivalent commands work in another shell.
+```bash
+docker run --name cadence-postgres -e POSTGRES_DB=weekly_report_db \
+  -e POSTGRES_PASSWORD=change-me -p 5432:5432 -d postgres:17
+```
 
-## 1. Install dependencies
+**2. Backend** (runs on `http://localhost:8080`)
 
-### Frontend
+```bash
+cd platform/backend
+cp src/main/resources/application-secrets.properties.example \
+   src/main/resources/application-secrets.properties
+# edit it: DB_URL, DB_PASSWORD, JWT_SECRET
+./mvnw spring-boot:run
+```
 
-```powershell
-Set-Location platform/frontend
+**3. Frontend** (runs on `http://localhost:5173`)
+
+```bash
+cd platform/frontend
 npm ci
-```
-
-Use `npm install` instead of `npm ci` only when intentionally changing the dependency lockfile.
-
-### Backend
-
-No separate package installation is required. The Maven Wrapper downloads the Maven distribution and Java dependencies the first time it runs. From `platform/backend`, use `./mvnw.cmd` on Windows or `./mvnw` on macOS/Linux.
-
-## 2. Run the database
-
-### Option A: local PostgreSQL installation
-
-Start your PostgreSQL service, then create the development database once:
-
-```powershell
-psql -U postgres -d postgres -c "CREATE DATABASE weekly_report_db;"
-```
-
-If the database already exists, PostgreSQL will report that fact; continue with the backend setup.
-
-### Option B: PostgreSQL with Docker
-
-```powershell
-docker run --name cadence-postgres `
-  -e POSTGRES_DB=weekly_report_db `
-  -e POSTGRES_USER=postgres `
-  -e POSTGRES_PASSWORD=change-me `
-  -p 5432:5432 `
-  -d postgres:17
-```
-
-Later, restart that container with:
-
-```powershell
-docker start cadence-postgres
-```
-
-Do not apply `platform/backend/schema.sql` during a normal local setup. The backend uses Flyway and automatically applies `src/main/resources/db/migration/V1__initial_schema.sql` to an empty database. Applying both would create conflicting schema setup paths. The SQL dump is useful for inspection or a controlled restore only.
-
-## 3. Configure and run the backend
-
-Change to the backend directory and create the ignored local secrets file from the template:
-
-```powershell
-Set-Location platform/backend
-Copy-Item src/main/resources/application-secrets.properties.example src/main/resources/application-secrets.properties
-```
-
-Set the following values in `src/main/resources/application-secrets.properties` for your local database:
-
-```properties
-DB_URL=jdbc:postgresql://localhost:5432/weekly_report_db
-DB_USERNAME=postgres
-DB_PASSWORD=your_postgres_password
-JWT_SECRET=your_long_random_base64_secret
-```
-
-`application-secrets.properties` is intentionally ignored by Git. Keep real database credentials and JWT secrets out of source control. Generate an appropriate random secret for every non-development environment.
-
-Start the API:
-
-```powershell
-./mvnw.cmd spring-boot:run
-```
-
-The API runs at `http://localhost:8080` by default. On its first connection to an empty database, Flyway creates the schema; the startup data seeder then creates the `TEAM_MEMBER` and `MANAGER` roles and loads the JSON data in `src/main/resources/seed-data/` only when those records are absent.
-
-Useful backend commands:
-
-```powershell
-./mvnw.cmd test
-./mvnw.cmd package
-```
-
-### Backend configuration notes
-
-- Database settings are read from `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`.
-- `JWT_SECRET` is required to sign and validate login tokens.
-- The frontend development origin `http://localhost:5173` is permitted by the backend CORS configuration and requests include cookies.
-- If the frontend is hosted elsewhere, use `VITE_API_BASE_URL` for its API address and add its exact origin to the backend CORS allowlist before using cookie-based authentication.
-
-## 4. Run the frontend
-
-Open a second terminal:
-
-```powershell
-Set-Location platform/frontend
 npm run dev
 ```
 
@@ -230,8 +111,6 @@ All API endpoints are under `/api` and protected endpoints require the JWT cooki
 | Users | `/api/users` | Team-member list and member profile |
 | Dashboard | `/api/dashboard` | Team and member summaries, trends, workload, and activity |
 
-<!--
-
 ## Demo data
 
 On a fresh database, startup seeding reads the JSON fixtures in `platform/backend/src/main/resources/seed-data/`.
@@ -252,5 +131,3 @@ For a clean demo dataset, create a new empty database (or deliberately reset a d
 - Build the frontend with `npm run build` and run/package the backend with Maven according to your hosting environment.
 
 For the component and request-flow diagram, see [architecture-diagram.md](architecture-diagram.md).
-
--->
