@@ -1,385 +1,60 @@
-# Cadence Backend
+# Cadence Platform
 
-Spring Boot REST API for the Cadence platform. Handles authentication, the weekly-report workflow, projects, and dashboard analytics.
+A weekly-report platform for teams. Team members write and submit weekly reports; managers review them, manage projects, and track team analytics.
 
-## Contents
+**Stack:** React 19 + TypeScript (Vite, Ant Design) · Spring Boot (Java 21) · PostgreSQL · JWT in an HTTP-only cookie with CSRF protection
 
-- [Tech stack](#tech-stack)
-- [Getting started](#getting-started)
-- [Configuration](#configuration)
-- [Project structure](#project-structure)
-- [Authentication and security](#authentication-and-security)
-- [Report workflow](#report-workflow)
-- [API reference](#api-reference)
-- [Database](#database)
-- [Demo data](#demo-data)
-- [Testing and building](#testing-and-building)
-- [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
-
-## Tech stack
-
-| Concern | Technology |
-| --- | --- |
-| Language / framework | Java 21, Spring Boot 4.1 (Web MVC, Validation) |
-| Persistence | Spring Data JPA (Hibernate), PostgreSQL, Querydsl for filtered queries |
-| Migrations | Flyway |
-| Security | Spring Security, JWT (jjwt 0.12), BCrypt |
-| Utilities | Lombok |
-| Build | Maven (wrapper included) |
-
-## Getting started
-
-Requirements: JDK 21 and a running PostgreSQL database. No separate Maven install is needed.
-
-1. Create the database, for example with Docker:
-
-   ```bash
-   docker run --name cadence-postgres -e POSTGRES_DB=weekly_report_db \
-     -e POSTGRES_PASSWORD=change-me -p 5432:5432 -d postgres:17
-   ```
-
-   Or with a local install: `psql -U postgres -c "CREATE DATABASE weekly_report_db;"`
-
-2. Create the local secrets file from the template (it is git-ignored):
-
-   ```bash
-   cp src/main/resources/application-secrets.properties.example \
-      src/main/resources/application-secrets.properties
-   ```
-
-3. Fill in the values (see [Configuration](#configuration)), then start the API:
-
-   ```bash
-   ./mvnw spring-boot:run        # use mvnw.cmd on Windows
-   ```
-
-The API is available at `http://localhost:8080`. A quick check is `GET /api/health`.
-
-## Configuration
-
-Settings live in `src/main/resources/application.properties` and read their secrets from environment variables or from `application-secrets.properties`.
-
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DB_URL` | Yes | JDBC URL, e.g. `jdbc:postgresql://localhost:5432/weekly_report_db` |
-| `DB_USERNAME` | No | Database user (defaults to `postgres`) |
-| `DB_PASSWORD` | Yes | Database password |
-| `JWT_SECRET` | Yes | Base64 secret used to sign login tokens. Use a long random value |
-| `APP_JWT_COOKIE_SECURE` | Yes | `false` for local HTTP, `true` for HTTPS deployments (see below) |
-
-Other fixed settings in `application.properties`:
-
-- Login tokens last 24 hours (`app.jwt.expiration-ms=86400000`).
-- `spring.jpa.hibernate.ddl-auto=validate`, so the schema is owned entirely by Flyway.
-- `spring.jpa.open-in-view=false`.
-
-Generate a secret with `openssl rand -base64 48`.
-
-## Project structure
+## Structure
 
 ```text
-src/main/java/com/cadence/
-├── controller/    HTTP endpoints and GlobalExceptionHandler
-├── service/       Business logic (AuthService, ReportService, ReportAccessService,
-│                  ProjectService, DashboardService)
-├── repository/    Spring Data repositories, plus Querydsl implementations for
-│                  filtered and paginated queries
-├── entity/        JPA entities and enums
-├── dto/           Request and response objects, grouped by feature
-├── security/      SecurityConfig, JWT filter and service, cookie and CSRF handling
-└── config/        DataSeeder, Querydsl config, seed-data models
-src/main/resources/
-├── db/migration/  Flyway migrations
-└── seed-data/     Demo users, projects and reports (JSON)
+platform/
+├── frontend/   React single-page app      → see platform/frontend/README.md
+└── backend/    Spring Boot REST API       → see platform/backend/README.md
 ```
 
-Requests flow controller → service → repository. Controllers deal in DTOs only; entities do not leave the service layer.
+## Quick start
 
-## Authentication and security
+**Prerequisites:** Node.js 20+, JDK 21, PostgreSQL (or Docker)
 
-**Login.** `POST /api/auth/login` validates credentials and sets an `auth_token` cookie containing a signed JWT. The cookie is `HttpOnly`, so JavaScript cannot read it. The API is stateless and keeps no server-side session.
-
-**Cookie attributes depend on `APP_JWT_COOKIE_SECURE`.**
-
-| Setting | `Secure` | `SameSite` | Use |
-| --- | --- | --- | --- |
-| `false` | No | `Lax` | Local development over HTTP |
-| `true` | Yes | `None` | Deployed over HTTPS, with frontend and API on different domains |
-
-Browsers reject `SameSite=None` without `Secure`, which is why both are controlled by one flag.
-
-**CSRF.** Spring sets an `XSRF-TOKEN` cookie that the frontend echoes back in the `X-XSRF-TOKEN` header on state-changing requests. Register, login, and logout are exempt.
-
-**CORS.** Allowed origins are an explicit list in `SecurityConfig.corsConfigurationSource()`: `http://localhost:5173` and the deployed frontend URL. Credentials are enabled, so `*` cannot be used. Add any new frontend origin there.
-
-**Authorization.** Public endpoints are `/api/auth/**` and `/api/health`. All other `/api/**` routes require authentication, and everything else is denied. Method-level rules use `@PreAuthorize`:
-
-- `hasRole('MANAGER')` or `hasRole('TEAM_MEMBER')` for role checks.
-- `ReportAccessService.isOwner` limits edit and submit to the report's author.
-- `ReportAccessService.canView` allows the author or any manager to read a report.
-
-Passwords are stored as BCrypt hashes.
-
-## Report workflow
-
-```text
-            submit                    approve
-  DRAFT ──────────────► SUBMITTED ──────────────► APPROVED
-    ▲                       │
-    │   edit + resubmit     │ request changes (comment required)
-    └──── NEEDS_CORRECTION ◄┘
-```
-
-- A report can be edited or submitted only while it is `DRAFT` or `NEEDS_CORRECTION`.
-- Each submission stores a **snapshot version** in `report_versions`, so the full revision history is kept.
-- Only `SUBMITTED` reports can be reviewed. A manager either approves or requests changes. Requesting changes requires a comment.
-- A manager can edit their comment for 15 minutes after posting it, and only while the report is `NEEDS_CORRECTION`. Edited comments are flagged.
-- Invalid state changes are rejected and returned as errors by `GlobalExceptionHandler`. Validation failures come back as a field-to-message map.
-
-## API reference
-
-All routes are under `/api`. "Manager" and "Member" show the role required.
-
-### Auth
-
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| POST | `/auth/register` | Public | Create an account |
-| POST | `/auth/login` | Public | Sign in and set the auth cookie |
-| POST | `/auth/logout` | Public | Clear the auth cookie |
-| GET | `/auth/me` | Signed in | Current user |
-
-### Reports
-
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| POST | `/reports` | Member | Create a draft |
-| PUT | `/reports/{id}` | Owner | Update a draft or a report needing correction |
-| POST | `/reports/{id}/submit` | Owner | Submit and snapshot a version |
-| GET | `/reports/mine` | Member | Own report history (filter, sort, paginate) |
-| GET | `/reports/{id}` | Owner or manager | Report detail |
-| GET | `/reports/{id}/versions` | Owner or manager | Version history |
-| GET | `/reports` | Manager | All reports (filter, sort, paginate) |
-| POST | `/reports/{id}/review` | Manager | Body `decision`: `APPROVE` or `REQUEST_CHANGES`, plus `comment` |
-| PATCH | `/reports/{id}/comment` | Manager | Edit a comment within the edit window |
-
-### Projects
-
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/projects` | Signed in | List projects |
-| POST | `/projects` | Manager | Create a project |
-| PUT | `/projects/{id}` | Manager | Update a project |
-| DELETE | `/projects/{id}` | Manager | Delete a project |
-
-### Users
-
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/users/team-members` | Manager | Team members list (filterable) |
-| GET | `/users/{id}` | Manager | Member profile |
-
-### Dashboard (manager only)
-
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/dashboard/summary` | Headline totals |
-| GET | `/dashboard/tasks-trend` | Task counts over time |
-| GET | `/dashboard/status-by-member` | Report status breakdown per member |
-| GET | `/dashboard/workload-by-project` | Workload per project |
-| GET | `/dashboard/time-by-task-type` | Hours by task type |
-| GET | `/dashboard/recent-activity` | Latest activity feed |
-| GET | `/dashboard/team-overview` | Per-member overview |
-| GET | `/dashboard/member-stats/{userId}` | Stats for one member |
-
-### Health
-
-`GET /api/health` is public and returns the service status.
-
-## Database
-
-PostgreSQL is the system of record and all IDs are UUIDs. The schema is created by Flyway from `src/main/resources/db/migration/V1__initial_schema.sql` the first time the app connects to an empty database. Do not apply it by hand.
-
-```mermaid
-erDiagram
-    roles ||--o{ users : "assigned to"
-    users ||--o{ weekly_reports : "writes"
-    projects ||--o{ weekly_reports : "covers"
-    weekly_reports ||--o{ report_tasks : "has"
-    weekly_reports ||--o{ time_logs : "has"
-    weekly_reports ||--o{ achievements : "has"
-    weekly_reports ||--o{ blockers : "has"
-    weekly_reports ||--o{ next_week_tasks : "has"
-    weekly_reports ||--o{ report_notes_links : "has"
-    weekly_reports ||--o{ report_versions : "snapshots"
-
-    roles {
-        uuid role_id PK
-        varchar role_name UK "TEAM_MEMBER, MANAGER"
-        varchar description
-    }
-
-    users {
-        uuid user_id PK
-        uuid role_id FK
-        varchar name
-        varchar email UK
-        varchar password_hash
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    projects {
-        uuid project_id PK
-        varchar name
-        varchar description
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    weekly_reports {
-        uuid report_id PK
-        uuid user_id FK
-        uuid project_id FK
-        date week_start_date
-        date week_end_date
-        varchar status "DRAFT, SUBMITTED, NEEDS_CORRECTION, APPROVED"
-        text notes
-        text manager_comment
-        timestamp submitted_at
-        timestamp approved_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    report_tasks {
-        uuid task_id PK
-        uuid report_id FK
-        varchar task_name
-        varchar priority "HIGH, MEDIUM, LOW"
-        varchar status "NOT_STARTED, IN_PROGRESS, DONE"
-        int planned_pct
-        int actual_pct
-        decimal time_planned
-        decimal time_spent
-        varchar deliverable
-    }
-
-    time_logs {
-        uuid time_log_id PK
-        uuid report_id FK
-        varchar task_type "DEVELOPMENT, TESTING, MEETINGS, DOCUMENTATION, OTHER"
-        decimal hours
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    achievements {
-        uuid achievement_id PK
-        uuid report_id FK
-        text description
-        boolean is_key_achievement
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    blockers {
-        uuid blocker_id PK
-        uuid report_id FK
-        text description
-        boolean is_key_issue
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    next_week_tasks {
-        uuid next_task_id PK
-        uuid report_id FK
-        varchar task_description
-        varchar priority "HIGH, MEDIUM, LOW"
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    report_notes_links {
-        uuid note_link_id PK
-        uuid report_id FK
-        varchar type "NOTE, LINK"
-        text content
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    report_versions {
-        uuid version_id PK
-        uuid report_id FK
-        int version_number
-        jsonb content_snapshot
-        boolean is_current
-        timestamp submitted_at
-        text comment
-        boolean comment_edited
-        timestamp comment_posted_at
-    }
-```
-
-Foreign keys have no cascade deletes, so remove child rows before their parent during manual cleanup.
-
-**Changing the schema.** Add a new `V2__description.sql` file. Never edit an applied migration, because Flyway checks its checksum.
-
-## Demo data
-
-On startup `DataSeeder` runs and:
-
-- Creates the two roles if missing.
-- Adds users and projects from `seed-data/*.json` if they do not exist.
-- Adds the demo reports only when the database has no reports at all.
-
-Report dates are relative to the Monday the seeder runs on, so the data always looks current. All seeded accounts use the password `Password123!`. Seeded managers include `dilani.wickramasinghe@cadence.dev`, `buddhika.kularatne@cadence.dev`, and `imesha.ekanayake@cadence.dev`. Team members include `amara.silva@cadence.dev`.
-
-Never deploy these accounts to a shared or production environment.
-
-## Testing and building
+**1. Database**
 
 ```bash
-./mvnw test             # run tests
-./mvnw package          # build target/*.jar
-./mvnw package -DskipTests
+docker run --name cadence-postgres -e POSTGRES_DB=weekly_report_db \
+  -e POSTGRES_PASSWORD=change-me -p 5432:5432 -d postgres:17
 ```
 
-Tests live in `src/test/java/com/cadence`. They include `ReportAccessServiceTest` for ownership and view rules, and `ApplicationTests`, a context-load test that needs a reachable database.
-
-## Deployment
-
-A multi-stage `Dockerfile` is included. It builds with Maven on JDK 21 and runs the jar on a JRE 21 image, exposing port 8080.
+**2. Backend** (runs on `http://localhost:8080`)
 
 ```bash
-docker build -t cadence-backend .
-docker run -p 8080:8080 \
-  -e DB_URL=jdbc:postgresql://host:5432/weekly_report_db \
-  -e DB_USERNAME=postgres \
-  -e DB_PASSWORD=... \
-  -e JWT_SECRET=... \
-  -e APP_JWT_COOKIE_SECURE=true \
-  cadence-backend
+cd platform/backend
+cp src/main/resources/application-secrets.properties.example \
+   src/main/resources/application-secrets.properties
+# edit it: DB_URL, DB_PASSWORD, JWT_SECRET
+./mvnw spring-boot:run
 ```
 
-Production checklist:
+**3. Frontend** (runs on `http://localhost:5173`)
 
-- Use a unique, random `JWT_SECRET` and strong database credentials.
-- Set `APP_JWT_COOKIE_SECURE=true` and serve over HTTPS.
-- Add the frontend's exact origin to the CORS list in `SecurityConfig`.
-- Do not load the demo users into a real environment.
-- Let Flyway apply migrations on startup, or run them in your deployment pipeline.
+```bash
+cd platform/frontend
+npm ci
+npm run dev
+```
 
-## Troubleshooting
+On first start, Flyway creates the schema and demo data is loaded. Sign in with `dilani.wickramasinghe@cadence.dev` (manager) or `amara.silva@cadence.dev` (team member). Both use the password `Password123!`. These are demo accounts only.
 
-| Symptom | Likely cause |
+## Roles
+
+| Role | Can do |
 | --- | --- |
-| Fails at startup with a placeholder error for `DB_URL` or `JWT_SECRET` | `application-secrets.properties` is missing or incomplete |
-| Schema validation error | The database has tables from outside Flyway. Use an empty database |
-| Login works but the next request is 401 | Cookie not stored. Check `APP_JWT_COOKIE_SECURE` matches HTTP or HTTPS, and that the origin is in the CORS list |
-| 403 on POST, PUT, PATCH, DELETE | Missing CSRF header. The frontend sends `X-XSRF-TOKEN` automatically |
-| Browser reports a CORS error | Frontend origin is not in the allowed list |
+| Team member | Create, edit, and submit their own reports; view their history |
+| Manager | Review all reports, manage projects, view team dashboard and member profiles |
+
+## Documentation
+
+- [Backend guide](platform/backend/README.md): configuration, security, API, database, testing, deployment
+- [Frontend guide](platform/frontend/README.md): configuration, structure, routes, data fetching, build
+
+## License
+
+See [LICENSE](LICENSE).
