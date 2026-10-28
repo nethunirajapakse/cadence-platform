@@ -201,43 +201,131 @@ All routes are under `/api`. "Manager" and "Member" show the role required.
 
 PostgreSQL is the system of record and all IDs are UUIDs. The schema is created by Flyway from `src/main/resources/db/migration/V1__initial_schema.sql` the first time the app connects to an empty database. Do not apply it by hand.
 
-```text
-roles 1 ─── * users 1 ─── * weekly_reports * ─── 1 projects
-                              │
-                              ├── * report_tasks
-                              ├── * time_logs
-                              ├── * achievements
-                              ├── * blockers
-                              ├── * next_week_tasks
-                              ├── * report_notes_links
-                              └── * report_versions
+```mermaid
+erDiagram
+    roles ||--o{ users : "assigned to"
+    users ||--o{ weekly_reports : "writes"
+    projects ||--o{ weekly_reports : "covers"
+    weekly_reports ||--o{ report_tasks : "has"
+    weekly_reports ||--o{ time_logs : "has"
+    weekly_reports ||--o{ achievements : "has"
+    weekly_reports ||--o{ blockers : "has"
+    weekly_reports ||--o{ next_week_tasks : "has"
+    weekly_reports ||--o{ report_notes_links : "has"
+    weekly_reports ||--o{ report_versions : "snapshots"
+
+    roles {
+        uuid role_id PK
+        varchar role_name UK "TEAM_MEMBER, MANAGER"
+        varchar description
+    }
+
+    users {
+        uuid user_id PK
+        uuid role_id FK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    projects {
+        uuid project_id PK
+        varchar name
+        varchar description
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    weekly_reports {
+        uuid report_id PK
+        uuid user_id FK
+        uuid project_id FK
+        date week_start_date
+        date week_end_date
+        varchar status "DRAFT, SUBMITTED, NEEDS_CORRECTION, APPROVED"
+        text notes
+        text manager_comment
+        timestamp submitted_at
+        timestamp approved_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    report_tasks {
+        uuid task_id PK
+        uuid report_id FK
+        varchar task_name
+        varchar priority "HIGH, MEDIUM, LOW"
+        varchar status "NOT_STARTED, IN_PROGRESS, DONE"
+        int planned_pct
+        int actual_pct
+        decimal time_planned
+        decimal time_spent
+        varchar deliverable
+    }
+
+    time_logs {
+        uuid time_log_id PK
+        uuid report_id FK
+        varchar task_type "DEVELOPMENT, TESTING, MEETINGS, DOCUMENTATION, OTHER"
+        decimal hours
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    achievements {
+        uuid achievement_id PK
+        uuid report_id FK
+        text description
+        boolean is_key_achievement
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    blockers {
+        uuid blocker_id PK
+        uuid report_id FK
+        text description
+        boolean is_key_issue
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    next_week_tasks {
+        uuid next_task_id PK
+        uuid report_id FK
+        varchar task_description
+        varchar priority "HIGH, MEDIUM, LOW"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    report_notes_links {
+        uuid note_link_id PK
+        uuid report_id FK
+        varchar type "NOTE, LINK"
+        text content
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    report_versions {
+        uuid version_id PK
+        uuid report_id FK
+        int version_number
+        jsonb content_snapshot
+        boolean is_current
+        timestamp submitted_at
+        text comment
+        boolean comment_edited
+        timestamp comment_posted_at
+    }
 ```
 
-| Table | Purpose |
-| --- | --- |
-| `roles` | `TEAM_MEMBER` and `MANAGER` |
-| `users` | Profile, unique email, BCrypt hash, active flag, role |
-| `projects` | Name and optional description |
-| `weekly_reports` | Reporting week, notes, status, submit and review timestamps, manager comment |
-| `report_tasks` | Tasks with priority, status, progress, planned and spent time |
-| `time_logs` | Hours by task type |
-| `achievements` | Achievements, with a key-achievement flag |
-| `blockers` | Blockers, with a key-issue flag |
-| `next_week_tasks` | Planned work for next week, with priority |
-| `report_notes_links` | Extra notes or links |
-| `report_versions` | Submitted snapshots, version number, review comment, current-version flag |
-
-Allowed values:
-
-| Field | Values |
-| --- | --- |
-| Report status | `DRAFT`, `SUBMITTED`, `NEEDS_CORRECTION`, `APPROVED` |
-| Task status | `NOT_STARTED`, `IN_PROGRESS`, `DONE` |
-| Priority | `HIGH`, `MEDIUM`, `LOW` |
-| Time-log type | `DEVELOPMENT`, `TESTING`, `MEETINGS`, `DOCUMENTATION`, `OTHER` |
-| Note type | `NOTE`, `LINK` |
-
-Foreign keys have no cascade deletes, so related rows must be removed in order during manual cleanup.
+Foreign keys have no cascade deletes, so remove child rows before their parent during manual cleanup.
 
 **Changing the schema.** Add a new `V2__description.sql` file. Never edit an applied migration, because Flyway checks its checksum.
 
