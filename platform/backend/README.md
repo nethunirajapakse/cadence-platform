@@ -68,9 +68,11 @@ Settings live in `src/main/resources/application.properties` and read their secr
 | `JWT_SECRET` | Yes | Base64 secret used to sign login tokens. Use a long random value |
 | `APP_JWT_COOKIE_SECURE` | Yes | `false` for local HTTP, `true` for HTTPS deployments (see below) |
 | `APP_FRONTEND_URL` | No | Frontend base URL used in emailed links (default `http://localhost:5173`). Set it to the deployed frontend |
-| `APP_MAIL_ENABLED` | No | `false` (default) logs emails instead of sending; `true` sends over SMTP (see [Email](#email)) |
+| `APP_MAIL_ENABLED` | No | `false` (default) logs emails instead of sending; `true` sends them (see [Email](#email)) |
+| `APP_MAIL_PROVIDER` | No | `smtp` (default) or `gmail-api` |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | With `gmail-api` | OAuth credentials for sending through the Gmail API (see `AUTH_UPGRADE.md`) |
 | `APP_MAIL_FROM` | No | From address for outgoing email |
-| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | When mail is enabled | Standard Spring `spring.mail.*` SMTP settings |
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | With `smtp` | Standard Spring `spring.mail.*` SMTP settings |
 | `APP_SEED_DEMO_DATA` | No | `true` (default) loads demo accounts and reports; set `false` for a real deployment |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_PASSWORD` | No | Creates the first administrator at startup when none exists (password at least 10 characters) |
 
@@ -155,8 +157,9 @@ The rate limiter is in memory, which suits a single instance. Running several in
 All email goes through `MailService`.
 
 - `APP_MAIL_ENABLED=false` (default): the message, including the link, is written to the backend log. Use this locally.
-- `APP_MAIL_ENABLED=true`: sent through Spring's `JavaMailSender`, configured with the standard `spring.mail.*` properties. Any SMTP provider works, for example Resend (`smtp.resend.com`, port 587, username `resend`, password your API key), Amazon SES, Brevo or Gmail. Set the values in `application-secrets.properties` or as environment variables.
-- Some hosts block outbound SMTP ports. If sending fails in production, add an HTTP-API implementation inside `MailService.send`; nothing else depends on SMTP.
+- `APP_MAIL_ENABLED=true` with `APP_MAIL_PROVIDER=smtp` (default): sent through Spring's `JavaMailSender`, configured with the standard `spring.mail.*` properties. Any SMTP provider works, for example Resend (`smtp.resend.com`, port 587, username `resend`, password your API key), Amazon SES or Brevo. Set the values in `application-secrets.properties` or as environment variables.
+- `APP_MAIL_ENABLED=true` with `APP_MAIL_PROVIDER=gmail-api`: sent through the Gmail REST API over HTTPS (`GmailApiClient`). Use this where outbound SMTP ports (25/465/587) are blocked, such as Render's free tier. It sends from one Gmail account, needs no domain and costs nothing; setup is in `AUTH_UPGRADE.md`.
+- Another HTTP-API provider can be added the same way: a small client class and one branch in `MailService.send`; nothing else depends on how mail is delivered.
 
 ### First administrator
 
