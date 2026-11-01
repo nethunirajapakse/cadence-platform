@@ -186,6 +186,8 @@ class ReportAccessServiceTest {
 
         WeeklyReport report = reportOwnedBy(ownerId, ReportStatus.SUBMITTED);
         when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        // The signed-in manager is the author's direct manager.
+        when(weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, managerId)).thenReturn(true);
 
         Authentication auth = authenticationFor(principal(managerId, RoleName.MANAGER));
 
@@ -200,6 +202,8 @@ class ReportAccessServiceTest {
 
         WeeklyReport report = reportOwnedBy(ownerId, ReportStatus.NEEDS_CORRECTION);
         when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        // The signed-in manager is the author's direct manager.
+        when(weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, managerId)).thenReturn(true);
 
         Authentication auth = authenticationFor(principal(managerId, RoleName.MANAGER));
 
@@ -214,6 +218,8 @@ class ReportAccessServiceTest {
 
         WeeklyReport report = reportOwnedBy(ownerId, ReportStatus.APPROVED);
         when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        // The signed-in manager is the author's direct manager.
+        when(weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, managerId)).thenReturn(true);
 
         Authentication auth = authenticationFor(principal(managerId, RoleName.MANAGER));
 
@@ -228,5 +234,104 @@ class ReportAccessServiceTest {
         Authentication auth = authenticationFor(principal(UUID.randomUUID(), RoleName.MANAGER));
 
         assertThat(service().canView(reportId, auth)).isFalse();
+    }
+
+    // =======================================================================
+    // manager scoping + admin: the rules added with the auth overhaul
+    // =======================================================================
+
+    @Test
+    void canView_managerIsBlockedFromAReportOutsideTheirTeam() {
+        UUID reportId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID otherManagerId = UUID.randomUUID();
+
+        WeeklyReport report = reportOwnedBy(ownerId, ReportStatus.SUBMITTED);
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        // The author reports to someone else.
+        when(weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, otherManagerId))
+                .thenReturn(false);
+
+        Authentication auth = authenticationFor(principal(otherManagerId, RoleName.MANAGER));
+
+        assertThat(service().canView(reportId, auth)).isFalse();
+    }
+
+    @Test
+    void canView_adminCannotReadReportContent() {
+        UUID reportId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        WeeklyReport report = reportOwnedBy(ownerId, ReportStatus.APPROVED);
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        Authentication auth = authenticationFor(principal(UUID.randomUUID(), RoleName.ADMIN));
+
+        assertThat(service().canView(reportId, auth)).isFalse();
+    }
+
+    @Test
+    void canReview_trueForTheAuthorsOwnManagerOnASubmittedReport() {
+        UUID reportId = UUID.randomUUID();
+        UUID managerId = UUID.randomUUID();
+
+        WeeklyReport report = reportOwnedBy(UUID.randomUUID(), ReportStatus.SUBMITTED);
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        when(weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, managerId)).thenReturn(true);
+
+        Authentication auth = authenticationFor(principal(managerId, RoleName.MANAGER));
+
+        assertThat(service().canReview(reportId, auth)).isTrue();
+    }
+
+    @Test
+    void canReview_falseForAManagerOfADifferentTeam() {
+        UUID reportId = UUID.randomUUID();
+        UUID otherManagerId = UUID.randomUUID();
+
+        WeeklyReport report = reportOwnedBy(UUID.randomUUID(), ReportStatus.SUBMITTED);
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        when(weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, otherManagerId))
+                .thenReturn(false);
+
+        Authentication auth = authenticationFor(principal(otherManagerId, RoleName.MANAGER));
+
+        assertThat(service().canReview(reportId, auth)).isFalse();
+    }
+
+    @Test
+    void canReview_falseForADraftEvenForTheAuthorsManager() {
+        UUID reportId = UUID.randomUUID();
+        UUID managerId = UUID.randomUUID();
+
+        WeeklyReport report = reportOwnedBy(UUID.randomUUID(), ReportStatus.DRAFT);
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        Authentication auth = authenticationFor(principal(managerId, RoleName.MANAGER));
+
+        assertThat(service().canReview(reportId, auth)).isFalse();
+    }
+
+    @Test
+    void canReview_falseForTeamMembersAndAdmins() {
+        UUID reportId = UUID.randomUUID();
+
+        WeeklyReport report = reportOwnedBy(UUID.randomUUID(), ReportStatus.SUBMITTED);
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        assertThat(service().canReview(reportId,
+                authenticationFor(principal(UUID.randomUUID(), RoleName.TEAM_MEMBER)))).isFalse();
+        assertThat(service().canReview(reportId,
+                authenticationFor(principal(UUID.randomUUID(), RoleName.ADMIN)))).isFalse();
+    }
+
+    @Test
+    void canReview_falseWhenReportDoesNotExist() {
+        UUID reportId = UUID.randomUUID();
+        when(weeklyReportRepository.findById(reportId)).thenReturn(Optional.empty());
+
+        Authentication auth = authenticationFor(principal(UUID.randomUUID(), RoleName.MANAGER));
+
+        assertThat(service().canReview(reportId, auth)).isFalse();
     }
 }

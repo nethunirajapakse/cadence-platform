@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { CadenceMark } from "@/components/CadenceMark";
+import { ROLE_LABELS } from "@/types/auth";
 
 const { Sider, Header, Content } = Layout;
 
@@ -19,6 +20,12 @@ const MANAGER_ITEMS = [
   { key: "/projects", label: "Projects" },
 ];
 
+const ADMIN_ITEMS = [
+  { key: "/admin/users", label: "Users" },
+  { key: "/admin/invitations", label: "Invitations" },
+  { key: "/admin/audit-log", label: "Audit log" },
+];
+
 export function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +34,8 @@ export function AppLayout() {
   const isMobile = !screens.md;
   const [isNavigationOpen, setNavigationOpen] = useState(false);
 
-  const items = user?.role === "MANAGER" ? MANAGER_ITEMS : TEAM_MEMBER_ITEMS;
+  const items =
+    user?.role === "ADMIN" ? ADMIN_ITEMS : user?.role === "MANAGER" ? MANAGER_ITEMS : TEAM_MEMBER_ITEMS;
 
   async function handleLogout() {
     await logout();
@@ -93,7 +101,7 @@ export function AppLayout() {
               />
             )}
           <Typography.Text type="secondary" ellipsis style={{ minWidth: 0 }}>
-            {user?.name} · {user?.role === "MANAGER" ? "Manager" : "Team member"}
+            {user?.name} · {user ? ROLE_LABELS[user.role] : ""}
           </Typography.Text>
           </div>
           <Button onClick={handleLogout}>Log out</Button>

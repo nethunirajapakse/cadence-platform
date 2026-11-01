@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CadenceMark } from "../components/CadenceMark";
+import { AuthCard, ErrorNotice, inputClass, primaryButtonClass } from "../components/AuthCard";
 import { useAuth } from "../context/AuthContext";
-import { ApiError } from "../lib/api";
+import { ApiError } from "../lib/axios";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -29,68 +29,53 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
-      <div className="w-full max-w-sm">
-        <CadenceMark />
-
-        <div className="border border-hairline bg-white p-8">
-          <h2 className="font-display text-lg font-semibold text-ink">Log in</h2>
-          <p className="mt-1 text-sm text-muted">Pick up your team's weekly reports.</p>
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-ink">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 w-full border border-hairline bg-white px-3 py-2 text-sm text-ink outline-none focus:border-teal"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-ink">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 w-full border border-hairline bg-white px-3 py-2 text-sm text-ink outline-none focus:border-teal"
-              />
-            </div>
-
-            {error && (
-              <p role="alert" className="border border-ochre/40 bg-ochre/10 px-3 py-2 text-sm text-ochre">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-teal py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal/90 disabled:opacity-60"
-            >
-              {isSubmitting ? "Logging in..." : "Log in"}
-            </button>
-          </form>
+    <AuthCard
+      title="Log in"
+      subtitle="Pick up your team's weekly reports."
+      footer="Accounts are created by invitation. Ask your administrator if you need access."
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-ink">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+          />
         </div>
 
-        <p className="mt-6 text-center text-sm text-muted">
-          New here?{" "}
-          <Link to="/register" className="font-medium text-teal hover:underline">
-            Create an account
-          </Link>
-        </p>
-      </div>
-    </div>
+        <div>
+          <div className="flex items-baseline justify-between">
+            <label htmlFor="password" className="block text-sm font-medium text-ink">
+              Password
+            </label>
+            <Link to="/forgot-password" className="text-xs font-medium text-teal hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+          <input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        {error && <ErrorNotice message={error} />}
+
+        <button type="submit" disabled={isSubmitting} className={primaryButtonClass}>
+          {isSubmitting ? "Logging in..." : "Log in"}
+        </button>
+      </form>
+    </AuthCard>
   );
 }

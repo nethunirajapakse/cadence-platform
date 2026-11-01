@@ -184,8 +184,14 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReportSummaryResponseDTO> getDashboard(ReportFilterCriteria criteria, Pageable pageable) {
-        return weeklyReportRepository.findForDashboard(criteria, pageable)
+    public Page<ReportSummaryResponseDTO> getDashboard(ReportFilterCriteria criteria, UUID managerId, Pageable pageable) {
+        // A manager's list is limited to their own direct reports - the scope comes
+        // from the signed-in manager, never from request parameters.
+        List<UUID> scope = userRepository.findDirectReportIds(managerId);
+        if (scope.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return weeklyReportRepository.findForDashboard(criteria, scope, pageable)
                 .map(ReportSummaryResponseDTO::new);
     }
 

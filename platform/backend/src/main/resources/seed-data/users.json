@@ -9,25 +9,29 @@
     "name": "Amara Silva",
     "email": "amara.silva@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Kavindu Perera",
     "email": "kavindu.perera@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Nadeesha Fernando",
     "email": "nadeesha.fernando@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Ruwan Jayasuriya",
     "email": "ruwan.jayasuriya@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Buddhika Kularatne",
@@ -45,132 +49,160 @@
     "name": "Sachini Yapa",
     "email": "sachini.yapa@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Chamari Liyanage",
     "email": "chamari.liyanage@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Umesha Kularatne",
     "email": "umesha.kularatne@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Manoj Thilakarathna",
     "email": "manoj.thilakarathna@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Gayan Obeysekera",
     "email": "gayan.obeysekera@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "dilani.wickramasinghe@cadence.dev"
   },
   {
     "name": "Sachini Obeysekera",
     "email": "sachini.obeysekera@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Rashmi Gunawardena",
     "email": "rashmi.gunawardena@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Dinesh Vithanage",
     "email": "dinesh.vithanage@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Buddhika Obeysekera",
     "email": "buddhika.obeysekera@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Nayana Ekanayake",
     "email": "nayana.ekanayake@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Sachini Illangakoon",
     "email": "sachini.illangakoon@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Malith Herath",
     "email": "malith.herath@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Vishwa Gunawardena",
     "email": "vishwa.gunawardena@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Chamari Yapa",
     "email": "chamari.yapa@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "buddhika.kularatne@cadence.dev"
   },
   {
     "name": "Buddhika Vithanage",
     "email": "buddhika.vithanage@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Chamari Weerasinghe",
     "email": "chamari.weerasinghe@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Gayan Yapa",
     "email": "gayan.yapa@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Lasitha Liyanage",
     "email": "lasitha.liyanage@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Janaki Peiris",
     "email": "janaki.peiris@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Anjali Herath",
     "email": "anjali.herath@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Gayan Udugampola",
     "email": "gayan.udugampola@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
   },
   {
     "name": "Rashmi Vithanage",
     "email": "rashmi.vithanage@cadence.dev",
     "password": "Password123!",
-    "role": "TEAM_MEMBER"
+    "role": "TEAM_MEMBER",
+    "managerEmail": "imesha.ekanayake@cadence.dev"
+  },
+  {
+    "name": "Cadence Admin",
+    "email": "admin@cadence.dev",
+    "password": "Password123!",
+    "role": "ADMIN"
   }
 ]

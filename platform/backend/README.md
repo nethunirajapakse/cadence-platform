@@ -67,10 +67,21 @@ Settings live in `src/main/resources/application.properties` and read their secr
 | `DB_PASSWORD` | Yes | Database password |
 | `JWT_SECRET` | Yes | Base64 secret used to sign login tokens. Use a long random value |
 | `APP_JWT_COOKIE_SECURE` | Yes | `false` for local HTTP, `true` for HTTPS deployments (see below) |
+| `APP_FRONTEND_URL` | No | Frontend base URL used in emailed links (default `http://localhost:5173`). Set it to the deployed frontend |
+| `APP_MAIL_ENABLED` | No | `false` (default) logs emails instead of sending; `true` sends them (see [Email](#email)) |
+| `APP_MAIL_PROVIDER` | No | `smtp` (default) or `gmail-api` |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | With `gmail-api` | OAuth credentials for sending through the Gmail API (see `AUTH_UPGRADE.md`) |
+| `APP_MAIL_FROM` | No | From address for outgoing email |
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | With `smtp` | Standard Spring `spring.mail.*` SMTP settings |
+| `APP_SEED_DEMO_DATA` | No | `true` (default) loads demo accounts and reports; set `false` for a real deployment |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_PASSWORD` | No | Creates the first administrator at startup when none exists (password at least 10 characters) |
 
 Other fixed settings in `application.properties`:
 
 - Login tokens last 24 hours (`app.jwt.expiration-ms=86400000`).
+- Invitation links last 48 hours and password reset links 30 minutes (`app.security.invite-ttl-hours`, `app.security.reset-ttl-minutes`).
+- Five failed sign-ins for one email within 15 minutes lock that email for 15 minutes (`app.security.max-failed-logins`, `attempt-window-minutes`, `lockout-minutes`). A looser per-IP limit also applies.
+- `server.forward-headers-strategy=native`, so the client IP used for rate limiting and the audit log comes from `X-Forwarded-For` when the request arrives through a trusted proxy such as Render.
 - `spring.jpa.hibernate.ddl-auto=validate`, so the schema is owned entirely by Flyway.
 - `spring.jpa.open-in-view=false`.
 
@@ -81,12 +92,16 @@ Generate a secret with `openssl rand -base64 48`.
 ```text
 src/main/java/com/cadence/
 ├── controller/    HTTP endpoints and GlobalExceptionHandler
-├── service/       Business logic (AuthService, ReportService, ReportAccessService,
-│                  ProjectService, DashboardService)
+├── service/       Business logic (AuthService, InvitationService, PasswordResetService,
+│                  AdminUserService, MailService, AuditService, LoginAttemptService,
+│                  PasswordPolicy, ReportService, ReportAccessService, ProjectService,
+│                  DashboardService)
 ├── repository/    Spring Data repositories, plus Querydsl implementations for
 │                  filtered and paginated queries
 ├── entity/        JPA entities and enums
 ├── dto/           Request and response objects, grouped by feature
+├── exception/     ApiException, FieldValidationException
+├── util/          TokenUtil (one-time tokens, email normalising)
 ├── security/      SecurityConfig, JWT filter and service, cookie and CSRF handling
 └── config/        DataSeeder, Querydsl config, seed-data models
 src/main/resources/
@@ -109,17 +124,46 @@ Requests flow controller → service → repository. Controllers deal in DTOs on
 
 Browsers reject `SameSite=None` without `Secure`, which is why both are controlled by one flag.
 
-**CSRF.** Spring sets an `XSRF-TOKEN` cookie that the frontend echoes back in the `X-XSRF-TOKEN` header on state-changing requests. Register, login, and logout are exempt.
+**CSRF.** Spring sets an `XSRF-TOKEN` cookie that the frontend echoes back in the `X-XSRF-TOKEN` header on state-changing requests. The pre-login endpoints (login, logout, accept invitation, forgot and reset password) are exempt because there is no session yet.
 
 **CORS.** Allowed origins are an explicit list in `SecurityConfig.corsConfigurationSource()`: `http://localhost:5173` and the deployed frontend URL. Credentials are enabled, so `*` cannot be used. Add any new frontend origin there.
 
 **Authorization.** Public endpoints are `/api/auth/**` and `/api/health`. All other `/api/**` routes require authentication, and everything else is denied. Method-level rules use `@PreAuthorize`:
 
-- `hasRole('MANAGER')` or `hasRole('TEAM_MEMBER')` for role checks.
+- `hasRole('ADMIN')`, `hasRole('MANAGER')` or `hasRole('TEAM_MEMBER')` for role checks. `/api/admin/**` is also restricted to administrators in `SecurityConfig`.
 - `ReportAccessService.isOwner` limits edit and submit to the report's author.
-- `ReportAccessService.canView` allows the author or any manager to read a report.
+- `ReportAccessService.canView` allows the author, or a manager whose direct report the author is (never for a draft). Administrators cannot read report content.
+- `ReportAccessService.canReview` limits review decisions and comment edits to the author's own manager.
 
 Passwords are stored as BCrypt hashes.
+
+### Accounts, roles and invitations
+
+There is **no public registration**. Roles are never chosen by the person signing up.
+
+- Roles: `ADMIN`, `MANAGER`, `TEAM_MEMBER`. Each team member has one direct manager (`users.manager_id`). A manager sees only their direct reports: reports, member lists, profiles and every dashboard figure are scoped by that link, in the backend queries and access checks.
+- An administrator invites someone with an email, a role and (for team members) a manager. The emailed link holds a single-use token that expires after 48 hours. Only a SHA-256 hash of the token is stored. Opening the link, the invitee sets a name and password and is signed in; the role comes from the invitation, not from the form.
+- Administrators can resend (new token and expiry, old link stops working) or revoke pending invitations, change roles and managers, and deactivate or reactivate accounts.
+- Deactivation takes effect on the user's next request, because `JwtAuthFilter` checks the active flag every time. A manager who still has active team members, and the last active administrator, cannot be deactivated or demoted.
+- Password reset: `POST /api/auth/forgot-password` always answers 204, whether or not the email has an account. The link is single use and expires after 30 minutes. A reset (like any password change) invalidates every session issued before it.
+- Password rules (`PasswordPolicy`): 10 to 72 bytes, not a well-known password, not repetitive, not containing the person's email or name.
+- Login protection: repeated failures lock the email (and, more loosely, the IP) temporarily. Wrong password, unknown email and deactivated account all return the same message.
+- Audit log: sign-ins and failures, invitations, account changes, password resets and report review decisions are recorded in `audit_log` and shown to administrators.
+
+The rate limiter is in memory, which suits a single instance. Running several instances would need it moved to a shared store such as Redis.
+
+### Email
+
+All email goes through `MailService`.
+
+- `APP_MAIL_ENABLED=false` (default): the message, including the link, is written to the backend log. Use this locally.
+- `APP_MAIL_ENABLED=true` with `APP_MAIL_PROVIDER=smtp` (default): sent through Spring's `JavaMailSender`, configured with the standard `spring.mail.*` properties. Any SMTP provider works, for example Resend (`smtp.resend.com`, port 587, username `resend`, password your API key), Amazon SES or Brevo. Set the values in `application-secrets.properties` or as environment variables.
+- `APP_MAIL_ENABLED=true` with `APP_MAIL_PROVIDER=gmail-api`: sent through the Gmail REST API over HTTPS (`GmailApiClient`). Use this where outbound SMTP ports (25/465/587) are blocked, such as Render's free tier. It sends from one Gmail account, needs no domain and costs nothing; setup is in `AUTH_UPGRADE.md`.
+- Another HTTP-API provider can be added the same way: a small client class and one branch in `MailService.send`; nothing else depends on how mail is delivered.
+
+### First administrator
+
+For a real deployment set `APP_SEED_DEMO_DATA=false` and the `BOOTSTRAP_ADMIN_*` variables. On startup, if no administrator exists, one is created from them. With demo data on, `admin@cadence.dev` is created instead.
 
 ## Report workflow
 
@@ -145,10 +189,27 @@ All routes are under `/api`. "Manager" and "Member" show the role required.
 
 | Method | Path | Access | Description |
 | --- | --- | --- | --- |
-| POST | `/auth/register` | Public | Create an account |
 | POST | `/auth/login` | Public | Sign in and set the auth cookie |
 | POST | `/auth/logout` | Public | Clear the auth cookie |
 | GET | `/auth/me` | Signed in | Current user |
+| GET | `/auth/invitations/preview?token=` | Public | Email, role and manager for an invitation link (410 if invalid or expired) |
+| POST | `/auth/accept-invite` | Public | Create the account from an invitation and sign in |
+| POST | `/auth/forgot-password` | Public | Email a reset link (always 204) |
+| POST | `/auth/reset-password` | Public | Set a new password with a reset token |
+
+### Admin (administrator only)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/admin/users` | All users with role, manager, team size, status |
+| PATCH | `/admin/users/{id}` | Change name, role or manager |
+| POST | `/admin/users/{id}/deactivate` | Deactivate (immediate lock-out) |
+| POST | `/admin/users/{id}/reactivate` | Reactivate |
+| GET | `/admin/invitations` | All invitations |
+| POST | `/admin/invitations` | Invite by email, role and (team members) manager |
+| POST | `/admin/invitations/{id}/resend` | Send a fresh link |
+| DELETE | `/admin/invitations/{id}` | Revoke a pending invitation |
+| GET | `/admin/audit-log` | Audit entries, filter by `action` and `actor`, paginated |
 
 ### Reports
 
@@ -158,11 +219,11 @@ All routes are under `/api`. "Manager" and "Member" show the role required.
 | PUT | `/reports/{id}` | Owner | Update a draft or a report needing correction |
 | POST | `/reports/{id}/submit` | Owner | Submit and snapshot a version |
 | GET | `/reports/mine` | Member | Own report history (filter, sort, paginate) |
-| GET | `/reports/{id}` | Owner or manager | Report detail |
-| GET | `/reports/{id}/versions` | Owner or manager | Version history |
-| GET | `/reports` | Manager | All reports (filter, sort, paginate) |
-| POST | `/reports/{id}/review` | Manager | Body `decision`: `APPROVE` or `REQUEST_CHANGES`, plus `comment` |
-| PATCH | `/reports/{id}/comment` | Manager | Edit a comment within the edit window |
+| GET | `/reports/{id}` | Owner or the author's manager | Report detail |
+| GET | `/reports/{id}/versions` | Owner or the author's manager | Version history |
+| GET | `/reports` | Manager | Reports from the manager's direct reports (filter, sort, paginate) |
+| POST | `/reports/{id}/review` | Author's manager | Body `decision`: `APPROVE` or `REQUEST_CHANGES`, plus `comment` |
+| PATCH | `/reports/{id}/comment` | Author's manager | Edit a comment within the edit window |
 
 ### Projects
 
@@ -177,10 +238,10 @@ All routes are under `/api`. "Manager" and "Member" show the role required.
 
 | Method | Path | Access | Description |
 | --- | --- | --- | --- |
-| GET | `/users/team-members` | Manager | Team members list (filterable) |
-| GET | `/users/{id}` | Manager | Member profile |
+| GET | `/users/team-members` | Manager | The manager's direct reports |
+| GET | `/users/{id}` | Manager | Profile of a direct report (404 for anyone else) |
 
-### Dashboard (manager only)
+### Dashboard (manager only, own team)
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -199,11 +260,14 @@ All routes are under `/api`. "Manager" and "Member" show the role required.
 
 ## Database
 
-PostgreSQL is the system of record and all IDs are UUIDs. The schema is created by Flyway from `src/main/resources/db/migration/V1__initial_schema.sql` the first time the app connects to an empty database. Do not apply it by hand.
+PostgreSQL is the system of record and all IDs are UUIDs. The schema is created by Flyway from `src/main/resources/db/migration/` (`V1__initial_schema.sql`, then `V2__auth_overhaul.sql` for the ADMIN role, manager link, invitations, password reset tokens and audit log) the first time the app connects. Do not apply it by hand. Existing databases are upgraded by `V2` on the next start; the seeder then links the demo team members to their managers.
 
 ```mermaid
 erDiagram
     roles ||--o{ users : "assigned to"
+    users ||--o{ users : "manages"
+    users ||--o{ invitations : "invites"
+    users ||--o{ password_reset_tokens : "requests"
     users ||--o{ weekly_reports : "writes"
     projects ||--o{ weekly_reports : "covers"
     weekly_reports ||--o{ report_tasks : "has"
@@ -216,16 +280,18 @@ erDiagram
 
     roles {
         uuid role_id PK
-        varchar role_name UK "TEAM_MEMBER, MANAGER"
+        varchar role_name UK "TEAM_MEMBER, MANAGER, ADMIN"
         varchar description
     }
 
     users {
         uuid user_id PK
         uuid role_id FK
+        uuid manager_id FK "direct manager of a team member"
         varchar name
         varchar email UK
         varchar password_hash
+        timestamp password_changed_at
         boolean is_active
         timestamp created_at
         timestamp updated_at
@@ -333,11 +399,14 @@ Foreign keys have no cascade deletes, so remove child rows before their parent d
 
 On startup `DataSeeder` runs and:
 
-- Creates the two roles if missing.
-- Adds users and projects from `seed-data/*.json` if they do not exist.
+- Creates the three roles if missing.
+- Adds users and projects from `seed-data/*.json` if they do not exist, and links each demo team member to a manager (`managerEmail` in `users.json`).
 - Adds the demo reports only when the database has no reports at all.
+- Creates the bootstrap administrator when configured and no administrator exists.
 
-Report dates are relative to the Monday the seeder runs on, so the data always looks current. All seeded accounts use the password `Password123!`. Seeded managers include `dilani.wickramasinghe@cadence.dev`, `buddhika.kularatne@cadence.dev`, and `imesha.ekanayake@cadence.dev`. Team members include `amara.silva@cadence.dev`.
+All of the demo seeding is skipped when `APP_SEED_DEMO_DATA=false`.
+
+Report dates are relative to the Monday the seeder runs on, so the data always looks current. All seeded accounts use the password `Password123!`. The seeded administrator is `admin@cadence.dev`. Seeded managers are `dilani.wickramasinghe@cadence.dev` (nine team members, including `amara.silva@cadence.dev`), `buddhika.kularatne@cadence.dev` (nine) and `imesha.ekanayake@cadence.dev` (eight).
 
 Never deploy these accounts to a shared or production environment.
 
@@ -349,7 +418,7 @@ Never deploy these accounts to a shared or production environment.
 ./mvnw package -DskipTests
 ```
 
-Tests live in `src/test/java/com/cadence`. They include `ReportAccessServiceTest` for ownership and view rules, and `ApplicationTests`, a context-load test that needs a reachable database.
+Tests live in `src/test/java/com/cadence`. They include `ReportAccessServiceTest` (ownership, manager scoping and admin exclusion), `PasswordPolicyTest`, `LoginAttemptServiceTest` and `TokenUtilTest`, plus `ApplicationTests`, a context-load test that needs a reachable database.
 
 ## Deployment
 

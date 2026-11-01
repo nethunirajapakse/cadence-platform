@@ -1,11 +1,10 @@
-export type RoleName = "TEAM_MEMBER" | "MANAGER";
+export type RoleName = "TEAM_MEMBER" | "MANAGER" | "ADMIN";
 
-export interface RegisterPayload {
-  name: string;
-  email: string;
-  password: string;
-  role: RoleName;
-}
+export const ROLE_LABELS: Record<RoleName, string> = {
+  TEAM_MEMBER: "Team member",
+  MANAGER: "Manager",
+  ADMIN: "Administrator",
+};
 
 export interface LoginPayload {
   email: string;
@@ -26,4 +25,23 @@ export interface AuthUser {
   name: string;
   email: string;
   role: RoleName;
+}
+
+// What the accept-invitation page may show before the invitee has done anything.
+export interface InvitationPreview {
+  email: string;
+  role: RoleName;
+  managerName: string | null;
+  expiresAt: string;
+}
+
+export interface AcceptInvitePayload {
+  token: string;
+  name: string;
+  password: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
 }

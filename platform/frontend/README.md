@@ -87,18 +87,23 @@ The `@` alias maps to `src/`, so imports look like `import { useAuth } from "@/c
 
 | Path | Page | Access |
 | --- | --- | --- |
-| `/login`, `/register` | Sign in and sign up | Public |
-| `/reports` | Own report history | Signed in |
-| `/reports/new` | Create a report | Signed in |
-| `/reports/:reportId` | Report detail, versions and review | Signed in |
-| `/reports/:reportId/edit` | Edit a draft or a report needing correction | Signed in |
+| `/login` | Sign in | Public |
+| `/accept-invite?token=` | Set name and password from an invitation link | Public |
+| `/forgot-password`, `/reset-password?token=` | Request and complete a password reset | Public |
+| `/reports` | Own report history | Team member |
+| `/reports/new` | Create a report | Team member |
+| `/reports/:reportId` | Report detail, versions and review | Team member, manager |
+| `/reports/:reportId/edit` | Edit a draft or a report needing correction | Team member |
+| `/admin/users` | Users, roles, managers, deactivate | Administrator |
+| `/admin/invitations` | Invite, resend, revoke | Administrator |
+| `/admin/audit-log` | Audit log | Administrator |
 | `/dashboard` | Team dashboard | Manager |
 | `/reports/all` | All team reports | Manager |
 | `/team-members` | Team members list | Manager |
 | `/team-members/:userId` | Member profile and stats | Manager |
 | `/projects` | Project management | Manager |
 
-Unknown paths redirect to `/`, which sends each user to their home page by role. The route guard only controls what the UI shows. The backend enforces the real permissions on every request.
+Unknown paths redirect to `/`, which sends each user to their home page by role (administrator: users, manager: team dashboard, team member: own reports). There is no sign-up page: accounts are created from an invitation link. The route guard only controls what the UI shows. The backend enforces the real permissions on every request.
 
 ## Authentication
 
