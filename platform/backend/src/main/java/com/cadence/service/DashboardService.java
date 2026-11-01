@@ -7,7 +7,6 @@ import com.cadence.entity.TimeLog;
 import com.cadence.entity.User;
 import com.cadence.entity.WeeklyReport;
 import com.cadence.entity.enums.ReportStatus;
-import com.cadence.entity.enums.RoleName;
 import com.cadence.entity.enums.TaskStatus;
 import com.cadence.repository.report.WeeklyReportRepository;
 import com.cadence.repository.report.item.BlockerRepository;
@@ -27,11 +26,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+// Every method takes the signed-in manager's id and computes over THAT manager's
+// direct reports only. The scope is resolved here from the id (which comes from
+// the authenticated principal), never from anything the client sends.
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -43,13 +47,21 @@ public class DashboardService {
     private final BlockerRepository blockerRepository;
     private final TimeLogRepository timeLogRepository;
 
-    public DashboardSummaryResponseDTO getSummary() {
+    private Set<UUID> scopeOf(UUID managerId) {
+        return new HashSet<>(userRepository.findDirectReportIds(managerId));
+    }
+
+    public DashboardSummaryResponseDTO getSummary(UUID managerId) {
         LocalDate currentWeekStart = mostRecentMonday();
         LocalDate currentWeekEnd = currentWeekStart.plusDays(4);
         LocalDate today = LocalDate.now();
 
-        List<User> teamMembers = userRepository.findByRoleName(RoleName.TEAM_MEMBER);
-        List<WeeklyReport> currentWeekReports = weeklyReportRepository.findByWeekStartDate(currentWeekStart);
+        Set<UUID> scope = scopeOf(managerId);
+        // Deactivated people are not expected to submit, so they don't count as late.
+        List<User> teamMembers = userRepository.findActiveDirectReports(managerId);
+        List<WeeklyReport> currentWeekReports = weeklyReportRepository.findByWeekStartDate(currentWeekStart).stream()
+                .filter(r -> scope.contains(r.getUser().getUserId()))
+                .toList();
 
         Map<UUID, WeeklyReport> reportByUserId = currentWeekReports.stream()
                 .collect(Collectors.toMap(r -> r.getUser().getUserId(), r -> r, (a, b) -> a));
@@ -71,11 +83,15 @@ public class DashboardService {
             }
         }
 
-        long needsCorrectionCount = weeklyReportRepository.countByStatus(ReportStatus.NEEDS_CORRECTION);
+        long needsCorrectionCount = scope.isEmpty()
+                ? 0
+                : weeklyReportRepository.countByStatusAndUser_UserIdIn(ReportStatus.NEEDS_CORRECTION, scope);
 
         long openBlockersCount = blockerRepository
                 .findAllForReportsInStatuses(List.of(ReportStatus.SUBMITTED, ReportStatus.NEEDS_CORRECTION))
-                .size();
+                .stream()
+                .filter(b -> scope.contains(b.getReport().getUser().getUserId()))
+                .count();
 
         return new DashboardSummaryResponseDTO(
                 submitted,
@@ -84,8 +100,11 @@ public class DashboardService {
                 (int) openBlockersCount);
     }
 
-    public List<TasksTrendPointDTO> getTasksCompletedTrend() {
-        List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
+    public List<TasksTrendPointDTO> getTasksCompletedTrend(UUID managerId) {
+        Set<UUID> scope = scopeOf(managerId);
+        List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT).stream()
+                .filter(t -> scope.contains(t.getReport().getUser().getUserId()))
+                .toList();
 
         Map<LocalDate, Long> countsByWeek = tasks.stream()
                 .filter(t -> t.getStatus() == TaskStatus.DONE)
@@ -97,8 +116,11 @@ public class DashboardService {
                 .toList();
     }
 
-    public List<MemberStatusBreakdownDTO> getStatusByMember() {
-        List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT);
+    public List<MemberStatusBreakdownDTO> getStatusByMember(UUID managerId) {
+        Set<UUID> scope = scopeOf(managerId);
+        List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT).stream()
+                .filter(r -> scope.contains(r.getUser().getUserId()))
+                .toList();
 
         Map<String, List<WeeklyReport>> byUser = reports.stream()
                 .collect(Collectors.groupingBy(r -> r.getUser().getName()));
@@ -117,8 +139,11 @@ public class DashboardService {
                 .toList();
     }
 
-    public List<ProjectWorkloadDTO> getWorkloadByProject() {
-        List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
+    public List<ProjectWorkloadDTO> getWorkloadByProject(UUID managerId) {
+        Set<UUID> scope = scopeOf(managerId);
+        List<ReportTask> tasks = reportTaskRepository.findAllExcludingReportStatus(ReportStatus.DRAFT).stream()
+                .filter(t -> scope.contains(t.getReport().getUser().getUserId()))
+                .toList();
 
         Map<String, Long> counts = tasks.stream()
                 .collect(Collectors.groupingBy(t -> t.getReport().getProject().getName(), Collectors.counting()));
@@ -129,8 +154,11 @@ public class DashboardService {
                 .toList();
     }
 
-    public List<TaskTypeHoursDTO> getTimeByTaskType() {
-        List<TimeLog> logs = timeLogRepository.findAllExcludingReportStatus(ReportStatus.DRAFT);
+    public List<TaskTypeHoursDTO> getTimeByTaskType(UUID managerId) {
+        Set<UUID> scope = scopeOf(managerId);
+        List<TimeLog> logs = timeLogRepository.findAllExcludingReportStatus(ReportStatus.DRAFT).stream()
+                .filter(l -> scope.contains(l.getReport().getUser().getUserId()))
+                .toList();
 
         Map<String, BigDecimal> sums = logs.stream()
                 .collect(Collectors.groupingBy(
@@ -143,8 +171,11 @@ public class DashboardService {
                 .toList();
     }
 
-    public List<ActivityItemDTO> getRecentActivity(int limit) {
-        List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT);
+    public List<ActivityItemDTO> getRecentActivity(UUID managerId, int limit) {
+        Set<UUID> scope = scopeOf(managerId);
+        List<WeeklyReport> reports = weeklyReportRepository.findAllExcludingStatus(ReportStatus.DRAFT).stream()
+                .filter(r -> scope.contains(r.getUser().getUserId()))
+                .toList();
 
         return reports.stream()
                 .map(this::toActivityItem)
@@ -159,7 +190,12 @@ public class DashboardService {
     // reports are excluded here too, for the same reason a manager can't see
     // them anywhere else: they're not "this person's activity" from a
     // manager's point of view until submitted.
-    public MemberStatsResponseDTO getMemberStats(UUID userId) {
+    public MemberStatsResponseDTO getMemberStats(UUID managerId, UUID userId) {
+        // Someone else's team member is reported exactly like a user that doesn't exist.
+        if (!userRepository.isDirectReportOf(userId, managerId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
         List<WeeklyReport> allReports = weeklyReportRepository
                 .findByUser_UserId(userId, Pageable.unpaged())
                 .getContent();
@@ -189,8 +225,13 @@ public class DashboardService {
     // Projects search - dynamic predicates instead of a null-guarded JPQL
     // string), then computes report stats only for whichever page of users
     // came back - not the whole team on every request.
-    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(TeamMemberFilterCriteria criteria, Pageable pageable) {
-        Page<User> userPage = userRepository.findTeamMembersByFilters(criteria, pageable);
+    public Page<TeamMemberOverviewDTO> getTeamMemberOverview(
+            UUID managerId, TeamMemberFilterCriteria criteria, Pageable pageable) {
+        List<UUID> scope = userRepository.findDirectReportIds(managerId);
+        if (scope.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Page<User> userPage = userRepository.findTeamMembersByFilters(criteria, scope, pageable);
 
         List<UUID> userIds = userPage.getContent().stream().map(User::getUserId).toList();
         List<WeeklyReport> reports = userIds.isEmpty()

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +20,11 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, UUID
     List<WeeklyReport> findByWeekStartDate(LocalDate weekStartDate);
 
     long countByStatus(ReportStatus status);
+
+    long countByStatusAndUser_UserIdIn(ReportStatus status, Collection<UUID> userIds);
+
+    // Used by access checks: is this report's author managed by the given manager?
+    boolean existsByReportIdAndUser_Manager_UserId(UUID reportId, UUID managerId);
 
     List<WeeklyReport> findByUser_UserIdInAndStatusNot(List<UUID> userIds, ReportStatus status);
 

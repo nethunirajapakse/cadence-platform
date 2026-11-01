@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +20,7 @@ public class UserPrincipal implements UserDetails {
     private final String passwordHash;
     private final boolean active;
     private final String roleName;
+    private final LocalDateTime passwordChangedAt;
 
     public UserPrincipal(User user) {
         this.userId = user.getUserId();
@@ -27,6 +29,7 @@ public class UserPrincipal implements UserDetails {
         this.passwordHash = user.getPasswordHash();
         this.active = user.isActive();
         this.roleName = user.getRole().getRoleName().name();
+        this.passwordChangedAt = user.getPasswordChangedAt();
     }
 
     @Override

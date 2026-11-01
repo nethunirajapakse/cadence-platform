@@ -1,5 +1,6 @@
 package com.cadence.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 
 @Component
 @RequiredArgsConstructor
@@ -36,26 +40,56 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String email = jwtService.extractEmail(token);
-
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails;
-            try {
-                userDetails = userDetailsService.loadUserByUsername(email);
-            } catch (UsernameNotFoundException e) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            if (jwtService.isTokenValid(token, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
+        try {
+            authenticate(token, request);
+        } catch (JwtException | IllegalArgumentException e) {
+            // Tampered, malformed or expired token: treat the request as anonymous
+            // (the endpoint's own rules then answer 401) instead of failing with a 500.
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void authenticate(String token, HttpServletRequest request) {
+        String email = jwtService.extractEmail(token);
+
+        if (email == null || SecurityContextHolder.getContext().getAuthentication() != null) {
+            return;
+        }
+
+        UserDetails userDetails;
+        try {
+            userDetails = userDetailsService.loadUserByUsername(email);
+        } catch (UsernameNotFoundException e) {
+            return;
+        }
+
+        if (!jwtService.isTokenValid(token, userDetails.getUsername())) {
+            return;
+        }
+
+        // Checked on every request, not just at login, so deactivating a user
+        // locks them out immediately instead of when their token expires.
+        if (!userDetails.isEnabled()) {
+            return;
+        }
+
+        // A password change/reset invalidates every session issued before it.
+        if (userDetails instanceof UserPrincipal principal && principal.getPasswordChangedAt() != null) {
+            Instant changedAt = principal.getPasswordChangedAt()
+                    .truncatedTo(ChronoUnit.SECONDS)
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant();
+            Instant issuedAt = jwtService.extractIssuedAt(token).toInstant();
+            if (issuedAt.isBefore(changedAt)) {
+                return;
+            }
+        }
+
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
     }
 
     // Reads from the httpOnly cookie now, not an Authorization header - the

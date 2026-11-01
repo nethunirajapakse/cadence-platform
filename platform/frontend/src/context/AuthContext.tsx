@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getCurrentUser, loginUser, logoutUser, registerUser } from "@/api/auth";
-import type { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from "@/types/auth";
+import { acceptInvitation, getCurrentUser, loginUser, logoutUser } from "@/api/auth";
+import type { AcceptInvitePayload, AuthResponse, AuthUser, LoginPayload } from "@/types/auth";
 
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  acceptInvite: (payload: AcceptInvitePayload) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -39,8 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(toAuthUser(response));
   }
 
-  async function register(payload: RegisterPayload) {
-    const response = await registerUser(payload);
+  // Accounts are only created from an invitation link; this also signs the new user in.
+  async function acceptInvite(payload: AcceptInvitePayload) {
+    const response = await acceptInvitation(payload);
     setUser(toAuthUser(response));
   }
 
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, acceptInvite, logout }}>
       {children}
     </AuthContext.Provider>
   );

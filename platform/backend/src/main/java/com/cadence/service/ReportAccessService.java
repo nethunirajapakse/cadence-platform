@@ -11,8 +11,16 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 // Role checks (@PreAuthorize("hasRole('MANAGER')")) only answer "what can this
-// role do in general" - they can't know who OWNS a specific report, or what
-// STATUS it's in, without loading it first. Both row-level checks live here.
+// role do in general" - they can't know who OWNS a specific report, who that
+// owner reports to, or what STATUS it's in, without loading it first. Those
+// row-level checks live here.
+//
+// Visibility rules:
+//   - the author can always see their own report, in any status;
+//   - a manager can see (and review) a report only if its author is one of
+//     that manager's DIRECT REPORTS, and never while it is still a draft;
+//   - nobody else can - this includes administrators, who manage accounts
+//     but are not given access to report content.
 @Service
 @RequiredArgsConstructor
 public class ReportAccessService {
@@ -28,12 +36,9 @@ public class ReportAccessService {
                 .orElse(false);
     }
 
-    // Used for read access (detail, version history): the owner can always see
-    // their own report regardless of status. A manager can see any report
-    // EXCEPT a draft - "Draft ... only visible to [the team member]" per the
-    // spec. This must hold everywhere a report can be read, not just on the
-    // dashboard list, or a manager could still reach a draft by guessing/
-    // copying its reportId directly.
+    // Used for read access (detail, version history). This must hold everywhere
+    // a report can be read, not just on the dashboard list, or a manager could
+    // still reach someone else's report by guessing/copying its reportId.
     public boolean canView(UUID reportId, Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
 
@@ -43,9 +48,28 @@ public class ReportAccessService {
                     if (isOwner) {
                         return true;
                     }
-                    boolean isManager = "MANAGER".equals(principal.getRoleName());
-                    return isManager && report.getStatus() != ReportStatus.DRAFT;
+                    return isManagerOfSubmittedReport(report, reportId, principal);
                 })
                 .orElse(false);
+    }
+
+    // Used for review decisions and comment edits: same rule as a manager's
+    // read access - the author's own manager, on a non-draft report.
+    public boolean canReview(UUID reportId, Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        return weeklyReportRepository.findById(reportId)
+                .map(report -> isManagerOfSubmittedReport(report, reportId, principal))
+                .orElse(false);
+    }
+
+    private boolean isManagerOfSubmittedReport(WeeklyReport report, UUID reportId, UserPrincipal principal) {
+        if (!"MANAGER".equals(principal.getRoleName())) {
+            return false;
+        }
+        if (report.getStatus() == ReportStatus.DRAFT) {
+            return false;
+        }
+        return weeklyReportRepository.existsByReportIdAndUser_Manager_UserId(reportId, principal.getUserId());
     }
 }

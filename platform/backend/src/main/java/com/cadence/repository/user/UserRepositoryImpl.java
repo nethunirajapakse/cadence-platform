@@ -12,7 +12,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepositoryCustom {
@@ -20,11 +22,12 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<User> findTeamMembersByFilters(TeamMemberFilterCriteria criteria, Pageable pageable) {
+    public Page<User> findTeamMembersByFilters(TeamMemberFilterCriteria criteria, Collection<UUID> allowedUserIds, Pageable pageable) {
         QUser user = QUser.user;
         BooleanBuilder predicate = new BooleanBuilder();
 
         predicate.and(user.role.roleName.eq(RoleName.TEAM_MEMBER));
+        predicate.and(user.userId.in(allowedUserIds));
 
         if (StringUtils.hasText(criteria.getName())) {
             predicate.and(user.name.containsIgnoreCase(criteria.getName()));

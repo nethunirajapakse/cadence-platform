@@ -11,15 +11,18 @@ import com.cadence.entity.ReportVersion;
 import com.cadence.entity.Role;
 import com.cadence.entity.User;
 import com.cadence.entity.WeeklyReport;
+import com.cadence.entity.enums.AuditAction;
 import com.cadence.entity.enums.RoleName;
 import com.cadence.repository.project.ProjectRepository;
 import com.cadence.repository.report.ReportVersionRepository;
 import com.cadence.repository.user.RoleRepository;
 import com.cadence.repository.user.UserRepository;
 import com.cadence.repository.report.WeeklyReportRepository;
+import com.cadence.service.AuditService;
 import com.cadence.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -55,15 +58,75 @@ public class DataSeeder implements CommandLineRunner {
     private final ReportService reportService;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final AuditService auditService;
+
+    // Demo accounts, projects and reports (with their well-known passwords).
+    // Leave on for a demo; turn OFF (APP_SEED_DEMO_DATA=false) for a real deployment.
+    @Value("${app.seed.demo-data:true}")
+    private boolean seedDemoData;
+
+    // Optional first administrator for a real deployment. Created only when no
+    // administrator exists yet, so it is safe to leave configured.
+    @Value("${app.bootstrap-admin.email:}")
+    private String bootstrapAdminEmail;
+
+    @Value("${app.bootstrap-admin.name:Administrator}")
+    private String bootstrapAdminName;
+
+    @Value("${app.bootstrap-admin.password:}")
+    private String bootstrapAdminPassword;
 
     @Override
     public void run(String... args) throws Exception {
         seedRoleIfMissing(RoleName.TEAM_MEMBER, "Creates and submits their own weekly reports");
-        seedRoleIfMissing(RoleName.MANAGER, "Reviews reports across the whole team and manages projects");
+        seedRoleIfMissing(RoleName.MANAGER, "Reviews reports from their own direct reports and manages projects");
+        seedRoleIfMissing(RoleName.ADMIN, "Manages users, invitations and roles; cannot read report content");
 
-        seedUsersFromJson();
-        seedProjectsFromJson();
-        seedReportsFromJson();
+        if (seedDemoData) {
+            seedUsersFromJson();
+            seedProjectsFromJson();
+            seedReportsFromJson();
+        } else {
+            log.info("Demo data seeding is disabled (app.seed.demo-data=false).");
+        }
+
+        bootstrapAdminIfConfigured();
+    }
+
+    // ---- bootstrap admin -----------------------------------------------------------
+
+    private void bootstrapAdminIfConfigured() {
+        if (bootstrapAdminEmail == null || bootstrapAdminEmail.isBlank()) {
+            return;
+        }
+        if (!userRepository.findByRoleName(RoleName.ADMIN).isEmpty()) {
+            log.info("An administrator already exists - skipping bootstrap admin.");
+            return;
+        }
+        if (bootstrapAdminPassword == null || bootstrapAdminPassword.length() < 10) {
+            throw new IllegalStateException(
+                    "app.bootstrap-admin.email is set but app.bootstrap-admin.password is missing or "
+                            + "shorter than 10 characters.");
+        }
+
+        String email = bootstrapAdminEmail.trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalStateException(
+                    "Cannot bootstrap an administrator: " + email + " already exists as a non-admin user.");
+        }
+
+        Role adminRole = roleRepository.findByRoleName(RoleName.ADMIN)
+                .orElseThrow(() -> new IllegalStateException("Role not seeded: ADMIN"));
+        User admin = userRepository.save(User.builder()
+                .name(bootstrapAdminName)
+                .email(email)
+                .passwordHash(passwordEncoder.encode(bootstrapAdminPassword))
+                .role(adminRole)
+                .passwordChangedAt(LocalDateTime.now())
+                .build());
+        auditService.record(admin.getUserId(), email, AuditAction.ADMIN_BOOTSTRAPPED, email,
+                "created from app.bootstrap-admin configuration", "startup");
+        log.warn("Bootstrap administrator created: {}. Change this password after first sign-in.", email);
     }
 
     // ---- roles ---------------------------------------------------------------
@@ -94,8 +157,25 @@ public class DataSeeder implements CommandLineRunner {
                     .email(seedUser.getEmail())
                     .passwordHash(passwordEncoder.encode(seedUser.getPassword()))
                     .role(role)
+                    .passwordChangedAt(LocalDateTime.now())
                     .build();
 
+            userRepository.save(user);
+        }
+
+        // Second pass, once every user exists: link team members to their manager.
+        // Idempotent, and also fixes up databases seeded before managers existed.
+        for (SeedUser seedUser : seedUsers) {
+            if (seedUser.getManagerEmail() == null) {
+                continue;
+            }
+            User user = userRepository.findByEmail(seedUser.getEmail()).orElseThrow();
+            if (user.getManager() != null) {
+                continue;
+            }
+            User manager = userRepository.findByEmail(seedUser.getManagerEmail())
+                    .orElseThrow(() -> new IllegalStateException("Seed manager not found: " + seedUser.getManagerEmail()));
+            user.setManager(manager);
             userRepository.save(user);
         }
     }

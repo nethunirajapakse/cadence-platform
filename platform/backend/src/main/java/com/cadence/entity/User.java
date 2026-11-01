@@ -33,6 +33,16 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    // The direct manager of a TEAM_MEMBER. Null for managers and admins. A
+    // manager can only see reports from users whose manager_id points at them.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_id")
+    private User manager;
+
+    // Sessions issued before this moment are rejected (set on password change/reset).
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean active = true;

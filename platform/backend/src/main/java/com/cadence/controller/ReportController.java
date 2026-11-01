@@ -1,8 +1,11 @@
 package com.cadence.controller;
 
 import com.cadence.dto.report.*;
+import com.cadence.entity.enums.AuditAction;
 import com.cadence.security.UserPrincipal;
+import com.cadence.service.AuditService;
 import com.cadence.service.ReportService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +25,7 @@ import java.util.UUID;
 public class ReportController {
 
     private final ReportService reportService;
+    private final AuditService auditService;
 
     @PostMapping
     @PreAuthorize("hasRole('TEAM_MEMBER')")
@@ -64,19 +68,37 @@ public class ReportController {
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public Page<ReportSummaryResponseDTO> dashboard(ReportFilterCriteria criteria, Pageable pageable) {
-        return reportService.getDashboard(criteria, pageable);
+    public Page<ReportSummaryResponseDTO> dashboard(
+            ReportFilterCriteria criteria, Pageable pageable, @AuthenticationPrincipal UserPrincipal principal) {
+        return reportService.getDashboard(criteria, principal.getUserId(), pageable);
     }
 
     @PostMapping("/{reportId}/review")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ReportResponseDTO review(@PathVariable UUID reportId, @Valid @RequestBody ReviewRequestDTO request) {
-        return reportService.review(reportId, request);
+    @PreAuthorize("hasRole('MANAGER') and @reportAccessService.canReview(#reportId, authentication)")
+    public ReportResponseDTO review(
+            @PathVariable UUID reportId,
+            @Valid @RequestBody ReviewRequestDTO request,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest http) {
+        ReportResponseDTO result = reportService.review(reportId, request);
+        auditService.record(principal.getUserId(), principal.getEmail(),
+                request.getDecision() == ReviewDecision.APPROVE
+                        ? AuditAction.REPORT_APPROVED
+                        : AuditAction.REPORT_CHANGES_REQUESTED,
+                "report " + reportId, null, http.getRemoteAddr());
+        return result;
     }
 
     @PatchMapping("/{reportId}/comment")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ReportResponseDTO editComment(@PathVariable UUID reportId, @Valid @RequestBody EditCommentRequestDTO request) {
-        return reportService.editManagerComment(reportId, request.getComment());
+    @PreAuthorize("hasRole('MANAGER') and @reportAccessService.canReview(#reportId, authentication)")
+    public ReportResponseDTO editComment(
+            @PathVariable UUID reportId,
+            @Valid @RequestBody EditCommentRequestDTO request,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest http) {
+        ReportResponseDTO result = reportService.editManagerComment(reportId, request.getComment());
+        auditService.record(principal.getUserId(), principal.getEmail(), AuditAction.REPORT_COMMENT_EDITED,
+                "report " + reportId, null, http.getRemoteAddr());
+        return result;
     }
 }
