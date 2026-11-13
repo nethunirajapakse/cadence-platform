@@ -3,8 +3,8 @@
 **Weekly reports for teams, without the spreadsheet chasing.** Team members write and submit a structured weekly report. Their manager reviews it, approves it or sends it back with a comment, and sees team workload and progress on a live dashboard.
 
 [**Live demo**](https://cadence-platform-xi.vercel.app) · React 19 + TypeScript · Spring Boot (Java 21) · PostgreSQL
-<!--
-![Manager dashboard](docs/screenshots/dashboard.png)
+
+<!-- ![Manager dashboard](docs/screenshots/dashboard.png)  -->
 
 <table>
   <tr>
@@ -16,7 +16,7 @@
     <td width="50%"><img src="docs/screenshots/team-member.png" alt="Team member profile and stats"><br><sub>Per-member profile and stats for their manager</sub></td>
   </tr>
 </table>
--->
+
 ## What it does
 
 | Role | Can do |
