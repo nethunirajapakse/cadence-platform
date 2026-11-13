@@ -4,7 +4,7 @@
 
 [**Live demo**](https://cadence-platform-xi.vercel.app) · React 19 + TypeScript · Spring Boot (Java 21) · PostgreSQL
 
-![Manager dashboard](docs/screenshots/dashboard.png)
+<!-- ![Manager dashboard](docs/screenshots/dashboard.png)  -->
 
 <table>
   <tr>
