@@ -60,6 +60,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        // By default Spring clears the CSRF token each time a request is
+                        // authenticated without a stored security context. With stateless JWT
+                        // that is every request, so the XSRF-TOKEN cookie was deleted after each
+                        // call and the next write got a 403. The token only needs to live as long
+                        // as the cookie, so the clearing strategy is replaced with a no-op.
+                        .sessionAuthenticationStrategy((authentication, request, response) -> { })
                         // Pre-login endpoints: there is no session yet for a CSRF token to protect.
                         .ignoringRequestMatchers("/api/auth/login", "/api/auth/logout",
                                 "/api/auth/accept-invite", "/api/auth/forgot-password", "/api/auth/reset-password")
